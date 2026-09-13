@@ -78,7 +78,9 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   const admin = createAdminClient()
   const paths = [
     extractStoragePath(existing?.cover_path ?? null),
-    ...(images ?? []).map((image) => extractStoragePath(image.path)),
+    ...(images ?? []).map((image: { path: string | null }) =>
+      extractStoragePath(image.path)
+    ),
   ].filter((path): path is string => Boolean(path))
   if (paths.length) void admin.storage.from('public-media').remove(paths).catch(() => {})
 
