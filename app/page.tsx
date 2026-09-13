@@ -17,10 +17,16 @@ export default async function Page() {
     const chosen = await getPublishedPropertyById(heroSetting.propertyId);
     if (chosen) heroProperty = toPropertyCard(chosen);
   }
-  if (heroSetting?.mode === "image" && heroSetting.imagePath) {
-    heroImage = heroSetting.imagePath.startsWith("http") || heroSetting.imagePath.startsWith("/")
-      ? heroSetting.imagePath
-      : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/public-media/${heroSetting.imagePath.replace(/^\/+/, "")}`;  }
+ if (heroSetting?.mode === "image" && heroSetting.imagePath) {
+  const imagePath = heroSetting.imagePath.trim();
+
+  heroImage =
+    imagePath.startsWith("http://") ||
+    imagePath.startsWith("https://") ||
+    imagePath.startsWith("/")
+      ? imagePath
+      : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/public-media/${imagePath.replace(/^\/+/, "")}`;
+}
   const citySummary = cities.slice(0, 4).join(", ");
 
   return (

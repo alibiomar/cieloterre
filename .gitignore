@@ -13,4 +13,5 @@ tsconfig.tsbuildinfo
 
 # OS
 .DS_Store
+# Supabase
 supabase/**
