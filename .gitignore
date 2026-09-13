@@ -1,0 +1,15 @@
+# Environment variables
+.env
+.env*.local
+
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+
+# Generated files
+tsconfig.tsbuildinfo
+
+# OS
+.DS_Store
