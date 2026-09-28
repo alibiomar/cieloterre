@@ -82,11 +82,10 @@ export async function getPublishedProperties(
 
 export async function getPropertyBySlug(slug: string): Promise<PropertyDetailRow | null> {
   const supabase = await createClient()
-  const select = '*, property_images(*), agencies(*), agents(*)'
 
   const { data, error } = await supabase
     .from('properties')
-    .select(select)
+    .select('*, property_images(*), agencies(*), agents(*)')
     .eq('slug', slug)
     .eq('status', 'published')
     .maybeSingle()
@@ -96,26 +95,9 @@ export async function getPropertyBySlug(slug: string): Promise<PropertyDetailRow
     throw new Error('Impossible de charger le bien')
   }
 
-  if (data) return data as PropertyDetailRow
-
-  // Some slugs contain characters (apostrophes, commas, accents) that can
-  // arrive re-encoded or decoded differently depending on how the link was
-  // built. Retry case-insensitively before giving up.
-  const { data: fallback, error: fallbackError } = await supabase
-    .from('properties')
-    .select(select)
-    .ilike('slug', slug)
-    .eq('status', 'published')
-    .maybeSingle()
-
-  if (fallbackError) {
-    console.error(`[getPropertyBySlug] fallback error for slug "${slug}":`, fallbackError)
-    return null
-  }
-
   // maybeSingle() returns null (no error) when nothing matches — pass that
   // through so callers can render a 404 instead of treating it as a failure.
-  return fallback as PropertyDetailRow | null
+  return data as PropertyDetailRow | null
 }
 export async function getSiteSetting<T = any>(key: string): Promise<T | null> {
   const supabase = await createClient()
@@ -173,7 +155,7 @@ export async function getPublicAgents(): Promise<Agent[]> {
   )
   if (error?.code === '42703') {
     ({ data, error } = await baseQuery(
-      'slug, name, bio, phone, email, avatar_path, is_public, agencies(name), profiles(full_name, phone, role)',
+      'slug, bio, phone, email, avatar_path, is_public, agencies(name), profiles(full_name, phone, role)',
     ))
   }
   if (error) {
@@ -188,9 +170,15 @@ export async function getPublicAgents(): Promise<Agent[]> {
   }
   return (data ?? []).map((agent: any) => {
     const profile = Array.isArray(agent.profiles) ? agent.profiles[0] : agent.profiles;
+    const slugName = String(agent.slug ?? '')
+      .replace(/-[a-z0-9]{1,8}$/i, '')
+      .split('-')
+      .filter(Boolean)
+      .map((part: string) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ')
     return {
     slug: agent.slug,
-    name: profile?.full_name ?? agent.name ?? agent.email ?? 'Conseiller CieloTerre',
+    name: agent.name?.trim() || profile?.full_name?.trim() || slugName || agent.email || 'Conseiller CieloTerre',
     role: profile?.role === 'agency_admin' ? 'Responsable d’agence' : 'Conseiller immobilier',
     city: agent.agencies?.name ?? '',
     languages: Array.isArray(agent.languages) && agent.languages.length ? agent.languages : ['Français', 'Arabe'],
