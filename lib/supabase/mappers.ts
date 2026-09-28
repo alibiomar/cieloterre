@@ -11,6 +11,11 @@ export function publicMediaUrl(value: unknown, fallback: string): string {
     : fallback
 }
 
+/** Build a safe detail URL for slugs that may contain accents or punctuation. */
+export function propertyHref(slug: string): string {
+  return `/biens/${encodeURIComponent(slug)}`
+}
+
 const TRANSACTION_LABELS: Record<string, Property['transaction']> = {
   rent: 'À louer',
   new: 'Neuf',

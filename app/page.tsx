@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, ArrowUpRight, MapPin } from "lucide-react";
 import { Footer, Header } from "@/components/site-chrome";
 import { getPublishedProperties, getPublishedPropertyById, getSiteSetting, toPropertyCard } from "@/lib/supabase/queries";
+import { propertyHref } from "@/lib/supabase/mappers";
 import ScrollExpand from "@/components/ScrollExpand";
 import TextLoop from "@/components/TextLoop";
 import Image from "next/image";
@@ -30,7 +31,7 @@ export default async function Page() {
   const citySummary = cities.slice(0, 4).join(", ");
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
+    <main className="site-noise min-h-screen bg-background text-foreground">
       <Header dark />
 
       <section className="relative overflow-hidden bg-background text-foreground">
@@ -95,7 +96,7 @@ export default async function Page() {
 
       {heroProperty && (
         <Link
-          href={`/biens/${heroProperty.slug}`}
+          href={propertyHref(heroProperty.slug)}
           aria-label={`Voir ${heroProperty.title}`}
           className="rounded-full bg-background p-3 text-earth transition hover:bg-secondary"
         >
@@ -290,7 +291,7 @@ function PropertyFeature({
   large?: boolean;
 }) {
   return (
-    <Link href={`/biens/${property.slug}`} className="group block">
+    <Link href={propertyHref(property.slug)} className="group block">
       <article className="overflow-hidden rounded-2xl border border-cool-light bg-surface">
         <div className={`relative overflow-hidden ${large ? "aspect-[1.25]" : "aspect-[1.5]"}`}>
           <Image

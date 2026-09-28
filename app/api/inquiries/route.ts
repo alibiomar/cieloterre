@@ -26,7 +26,12 @@ export async function POST(request: Request) {
   const body = parsed.data
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  const { error } = await (supabase.from('inquiries') as any).insert({ user_id: user?.id ?? null, property_id: body.propertyId ?? null, name: body.name, email: body.email, phone: body.phone ?? null, message: body.message })
+  let ownerId: string | null = null
+  if (body.propertyId) {
+    const { data: property } = await (supabase.from('properties') as any).select('agent_id, owner_id').eq('id', body.propertyId).maybeSingle()
+    ownerId = property?.owner_id ?? property?.agent_id ?? null
+  }
+  const { error } = await (supabase.from('inquiries') as any).insert({ user_id: user?.id ?? null, created_by: user?.id ?? null, owner_id: ownerId, property_id: body.propertyId ?? null, name: body.name, email: body.email, phone: body.phone ?? null, message: body.message })
   if (error) return NextResponse.json({ error: 'Impossible d’enregistrer votre demande' }, { status: 500 })
   return NextResponse.json({ ok: true })
 }

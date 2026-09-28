@@ -17,13 +17,11 @@ const stages = [
   ["won", "Gagnés"],
   ["lost", "Perdus"],
 ] as const;
-const stageColors: Record<string, string> = {
-  new: "bg-surface text-muted-foreground",
-  contacted: "bg-surface text-primary",
-  qualified: "bg-surface text-muted-foreground",
-  visit_scheduled: "bg-surface text-accent",
-  won: "bg-surface text-accent",
-  lost: "bg-surface text-primary",
+const priorityColors: Record<string, string> = {
+  low: "bg-sky/30 text-earth",
+  normal: "bg-surface text-soft-foreground",
+  high: "bg-primary/15 text-primary",
+  urgent: "bg-primary text-primary-foreground",
 };
 
 export function LeadsView({
@@ -52,18 +50,13 @@ export function LeadsView({
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<Lead | null>(null);
   const [busy, setBusy] = useState(false);
-  const [groupByAgency, setGroupByAgency] = useState(false);
   const filtered = useMemo(() => {
-    const bySearch = leads.filter((lead) =>
+    return leads.filter((lead) =>
       `${lead.contacts?.full_name ?? ""} ${lead.contacts?.email ?? ""} ${lead.properties?.title ?? ""}`
         .toLowerCase()
         .includes(search.toLowerCase()),
     );
-    if (!isAdmin || !groupByAgency) return bySearch;
-    return [...bySearch].sort((a, b) =>
-      (a.agency_name ?? "\uffff").localeCompare(b.agency_name ?? "\uffff"),
-    );
-  }, [leads, search, isAdmin, groupByAgency]);
+  }, [leads, search]);
 
   const updateStatus = async (id: string, status: string) => {
     setBusy(true);
@@ -97,16 +90,6 @@ export function LeadsView({
           </h2>
         </div>
         <div className="flex items-center gap-2">
-          {isAdmin && (
-            <button
-              type="button"
-              onClick={() => setGroupByAgency((v) => !v)}
-              aria-pressed={groupByAgency}
-              className={`whitespace-nowrap rounded-full border px-3 py-2 text-xs font-semibold ${groupByAgency ? "border-earth bg-earth text-primary-foreground" : "border-cool-light text-soft-foreground"}`}
-            >
-              Trier par agence
-            </button>
-          )}
           <label className="flex items-center gap-2 rounded-full border border-cool-light bg-background px-3 py-2 text-sm text-soft-foreground">
             <Search size={16} />
             <input
@@ -124,7 +107,10 @@ export function LeadsView({
           </button>
         </div>
       </div>
-      <p className="mt-4 text-xs text-soft-foreground">Glissez une carte d'une colonne à l'autre pour changer le statut.</p>
+      <div className="mt-5 flex items-center justify-between gap-3 rounded-xl bg-surface/50 px-3.5 py-3 text-xs text-soft-foreground">
+        <span>Glissez une carte d'une colonne à l'autre pour changer le statut.</span>
+        <span className="hidden shrink-0 font-semibold text-accent sm:block">{filtered.length} résultat{filtered.length > 1 ? "s" : ""}</span>
+      </div>
       <div className="mt-3 flex gap-4 overflow-x-auto pb-2">
         {stages.map(([status, label]) => (
           <div
@@ -136,7 +122,7 @@ export function LeadsView({
               const lead = leads.find((item) => item.id === id);
               if (lead && lead.status !== status) void updateStatus(id, status);
             }}
-            className="min-h-48 min-w-[220px] flex-1 rounded-xl bg-surface/40 p-3"
+            className="min-h-48 min-w-[220px] flex-1 rounded-2xl border border-cool-light/70 bg-surface/35 p-3"
           >
             <div className="flex items-center justify-between">
               <p className="text-xs font-bold uppercase tracking-wider text-soft-foreground">
@@ -241,7 +227,7 @@ function LeadCard({
         </div>
         <div className="flex items-center gap-1">
           <span
-            className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase ${stageColors[lead.priority] ?? "bg-gray-100"}`}
+            className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase ${priorityColors[lead.priority] ?? priorityColors.normal}`}
           >
             {lead.priority}
           </span>

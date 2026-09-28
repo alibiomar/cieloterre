@@ -27,6 +27,7 @@ export async function POST(request: Request) {
 
   const { data, error } = await supabase.from('visits').insert({
     owner_id: user.id,
+    created_by: user.id,
     contact_id: body.contact_id || null,
     lead_id: body.lead_id || null,
     property_id: body.property_id,

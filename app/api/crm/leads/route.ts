@@ -14,7 +14,7 @@ export async function POST(request: Request) {
   if (!profile || !['admin', 'agency_admin', 'agent'].includes(profile.role)) return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
   let contactId = typeof body.contactId === 'string' ? body.contactId : null
   if (!contactId) {
-    const { data: contact, error: contactError } = await db.from('contacts').insert({ owner_id: user.id, full_name: String(body.name).slice(0, 120), email: String(body.email).slice(0, 200), phone: body.phone ? String(body.phone).slice(0, 40) : null }).select('id').single()
+    const { data: contact, error: contactError } = await db.from('contacts').insert({ owner_id: user.id, created_by: user.id, full_name: String(body.name).slice(0, 120), email: String(body.email).slice(0, 200), phone: body.phone ? String(body.phone).slice(0, 40) : null }).select('id').single()
     if (contactError) return dbError('Impossible de créer le contact.', contactError)
     contactId = contact.id
   }
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
   const source = validSources.has(body.source) ? body.source : 'other'
   const priorities = new Set(['low', 'normal', 'high'])
   const priority = priorities.has(body.priority) ? body.priority : undefined
-  const { data: lead, error } = await db.from('leads').insert({ contact_id: contactId, property_id: body.propertyId || null, owner_id: user.id, message: String(body.message).slice(0, 2000), source, ...(priority ? { priority } : {}) }).select('id, status, priority, created_at, message, contacts(id, full_name, email, phone), properties(id, title, city, price)').single()
+  const { data: lead, error } = await db.from('leads').insert({ contact_id: contactId, property_id: body.propertyId || null, owner_id: user.id, created_by: user.id, message: String(body.message).slice(0, 2000), source, ...(priority ? { priority } : {}) }).select('id, status, priority, created_at, message, contacts(id, full_name, email, phone), properties(id, title, city, price)').single()
   if (error) return dbError('Impossible de créer le lead.', error)
   await logActivity(db, { actorId: user.id, activityType: 'created', leadId: lead.id, contactId, body: `Lead créé (source : ${source})` })
   return NextResponse.json({ lead })

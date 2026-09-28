@@ -1,11 +1,17 @@
+# v0 sandbox internal files
+__v0_runtime_loader.js
+__v0_devtools.tsx
+__v0_jsx-dev-runtime.ts
+.snowflake/
+.v0-trash/
+.vercel/
+
 # Environment variables
 .env
 .env*.local
 
-# Dependencies
-node_modules/
-
-# Next.js
+# Common ignores
+node_modules
 .next/
 
 # Generated files
@@ -15,3 +21,4 @@ tsconfig.tsbuildinfo
 .DS_Store
 # Supabase
 supabase/**
+cieloterre-demo-seed-tools/**

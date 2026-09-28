@@ -59,6 +59,11 @@ body { @apply bg-background text-foreground; font-family: var(--font-body), Mont
 .field { @apply rounded-xl border border-cool-light bg-background px-4 py-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-sky focus:ring-2 focus:ring-sky/30; }
 .glass-panel { border: 1px solid rgb(255 255 255 / 42%); background: rgb(255 255 255 / 78%); backdrop-filter: blur(18px) saturate(125%); }
 .glass-card { border: 1px solid rgb(220 229 229 / 65%); background: rgb(245 241 233 / 82%); backdrop-filter: blur(16px) saturate(120%); box-shadow: 0 20px 60px rgb(64 59 53 / 9%); }
+.site-noise { position: relative; isolation: isolate; }
+.site-noise::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: .055; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.8'/%3E%3C/svg%3E"); mix-blend-mode: multiply; }
+.text-loop { mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); }
+.text-loop__track { will-change: transform; }
+.site-noise a, .site-noise button { -webkit-tap-highlight-color: transparent; }
 .hero-vignette { background: linear-gradient(90deg, rgb(64 59 53 / 92%) 0%, rgb(64 59 53 / 61%) 46%, rgb(64 59 53 / 8%) 100%), linear-gradient(0deg, rgb(41 43 41 / 58%) 0%, transparent 45%); }
 .masked-heading { overflow: hidden; }
 .masked-heading__line { display: block; animation: masked-heading-in .9s cubic-bezier(.22,1,.36,1) both; }

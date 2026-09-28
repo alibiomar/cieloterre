@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { requireStaff, isStaffError, parseJson, escapePostgrestFilterValue, dbError } from '@/lib/crm/auth'
 import { SEARCH_FEATURES } from '@/lib/property-search'
 
-const PROPERTY_SELECT = 'id, slug, title, city, neighborhood, property_type, transaction_type, price, bedrooms, bathrooms, area_m2, description, cover_path, status, agency_id, agent_id, features, created_at, updated_at'
+const PROPERTY_SELECT = 'id, slug, title, city, neighborhood, property_type, transaction_type, price, bedrooms, bathrooms, area_m2, description, cover_path, status, agency_id, agent_id, owner_id, created_by, updated_by, features, created_at, updated_at'
 
 function sanitizeFeatures(value: unknown): string[] {
   if (!Array.isArray(value)) return []
@@ -69,6 +69,8 @@ export async function POST(request: Request) {
     features: sanitizeFeatures(body.features),
     agency_id: agencyId,
     agent_id: agentId,
+    owner_id: agentId || auth.user.id,
+    created_by: auth.user.id,
   }).select(PROPERTY_SELECT).single()
 
   if (error) return dbError('Impossible de créer le bien.', error)

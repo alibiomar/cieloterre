@@ -41,6 +41,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     }
   }
   if (Object.keys(update).length === 0) return NextResponse.json({ error: 'Aucune modification fournie.' }, { status: 400 })
+  update.updated_by = auth.user.id
 
   const { data, error } = await supabase.from('contacts').update(update).eq('id', id).select('id, full_name, email, phone, contact_type, notes, owner_id, created_at, updated_at').single()
   if (error) return dbError('Impossible de mettre à jour le contact.', error)

@@ -75,6 +75,7 @@ export async function POST(request: Request) {
       signature_status: ["not_required", "pending"].includes(body.signatureStatus) ? body.signatureStatus : "not_required",
       contact_id: typeof body.contactId === "string" ? body.contactId : null,
       created_by: auth.user.id,
+      owner_id: auth.user.id,
     })
     .select("*")
     .single();

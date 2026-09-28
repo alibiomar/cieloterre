@@ -16,6 +16,7 @@ import {
 import { SecureUpload } from "./secure-upload";
 import { Pagination } from "./pagination";
 import type { PaginationMeta } from "./contacts-view";
+import { propertyHref } from "@/lib/supabase/mappers";
 import { AgencyScopeBar } from "./agency-picker";
 
 const statusLabels: Record<string, string> = {
@@ -60,18 +61,13 @@ export function PropertiesView({
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<CrmProperty | null>(null);
-  const [groupByAgency, setGroupByAgency] = useState(false);
   const filtered = useMemo(() => {
-    const bySearch = properties.filter((property) =>
+    return properties.filter((property) =>
       `${property.title} ${property.city}`
         .toLowerCase()
         .includes(search.toLowerCase()),
     );
-    if (!isAdmin || !groupByAgency) return bySearch;
-    return [...bySearch].sort((a, b) =>
-      (a.agencies?.name ?? "\uffff").localeCompare(b.agencies?.name ?? "\uffff"),
-    );
-  }, [properties, search, isAdmin, groupByAgency]);
+  }, [properties, search]);
 
   const setStatus = async (property: CrmProperty, status: string) => {
     const response = await fetch(`/api/crm/properties/${property.id}`, {
@@ -94,7 +90,10 @@ export function PropertiesView({
     if (response.ok) {
       onPropertiesChange(properties.filter((item) => item.id !== id));
       notify("Bien supprimé");
-    } else notify("Le bien n'a pas pu être supprimé.");
+    } else {
+      const data = await response.json().catch(() => null);
+      notify(data?.error ?? "Le bien n'a pas pu être supprimé.");
+    }
   };
 
   return (
@@ -106,16 +105,6 @@ export function PropertiesView({
           <h2 className="mt-2 font-serif text-2xl">{agencyName ? `Biens · ${agencyName}` : "Biens"}</h2>
         </div>
         <div className="flex items-center gap-2">
-          {isAdmin && (
-            <button
-              type="button"
-              onClick={() => setGroupByAgency((v) => !v)}
-              aria-pressed={groupByAgency}
-              className={`whitespace-nowrap rounded-full border px-3 py-2 text-xs font-semibold ${groupByAgency ? "border-earth bg-earth text-primary-foreground" : "border-cool-light text-soft-foreground"}`}
-            >
-              Trier par agence
-            </button>
-          )}
           <label className="flex items-center gap-2 rounded-full border border-cool-light bg-background px-3 py-2 text-sm text-soft-foreground">
             <Search size={16} />
             <input
@@ -188,7 +177,7 @@ export function PropertiesView({
               </button>
               {property.status === "published" && (
                 <a
-                  href={`/biens/${property.slug}`}
+                  href={propertyHref(property.slug)}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center gap-1 rounded-full border border-cool-light px-3 py-1.5 hover:bg-background"

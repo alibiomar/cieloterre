@@ -41,6 +41,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if ('contact_id' in body) update.contact_id = body.contact_id || null
   if ('property_id' in body) update.property_id = body.property_id || null
   if (Object.keys(update).length === 0) return NextResponse.json({ error: 'Aucune modification fournie.' }, { status: 400 })
+  update.updated_by = auth.user.id
 
   const { data, error } = await supabase.from('crm_tasks').update(update).eq('id', id).select('id, title, description, due_date, status, priority, owner_id, created_at, contact_id, contacts(id, full_name), properties(id, title), leads(id)').single()
   if (error) return dbError('Impossible de mettre à jour la tâche.', error)

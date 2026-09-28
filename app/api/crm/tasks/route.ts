@@ -26,6 +26,7 @@ export async function POST(request: Request) {
 
   const { data, error } = await supabase.from('crm_tasks').insert({
     owner_id: user.id,
+    created_by: user.id,
     title: String(body.title).slice(0, 200),
     description: body.description ? String(body.description).slice(0, 4000) : null,
     due_date: body.due_date || null,

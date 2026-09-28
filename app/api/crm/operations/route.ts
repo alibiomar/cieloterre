@@ -148,7 +148,7 @@ export async function PATCH(request: Request) {
     (record as Record<string, unknown>).agency_id = auth.agencyId;
   }
 
-  const { data, error } = await db.from(table).update(record).eq("id", id).select("*").single();
+  const { data, error } = await db.from(table).update({ ...record, updated_by: auth.user.id }).eq("id", id).select("*").single();
   if (error) return NextResponse.json({ error: `Impossible de modifier cette donnée: ${error.message}` }, { status: 500 });
   return NextResponse.json({ data });
 }

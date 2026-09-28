@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { AlertTriangle, CalendarDays, ClipboardList, TrendingUp, Users } from "lucide-react";
+import { AlertTriangle, ArrowUpRight, CalendarDays, ClipboardList, Plus, TrendingUp, Users } from "lucide-react";
 import { formatDate, formatDateTime, isOverdueDate } from "./ui";
 
 type StatusCount = { status: string; count: number };
@@ -32,16 +32,19 @@ function Metric({
   return (
     <Link
       href={href}
-      className={`rounded-2xl border bg-background p-5 transition hover:border-earth/40 hover:shadow-sm ${alert && value > 0 ? "border-primary/40" : "border-cool-light"}`}
+      className={`group rounded-2xl border bg-background p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-earth/40 hover:shadow-[0_16px_36px_rgba(64,59,53,0.08)] ${alert && value > 0 ? "border-primary/40 bg-primary/[0.035]" : "border-cool-light"}`}
     >
       <div className={`grid h-10 w-10 place-items-center rounded-xl ${alert && value > 0 ? "bg-primary/10 text-primary" : "bg-surface text-muted-foreground"}`}>
         <Icon size={19} />
       </div>
       <p className="mt-5 text-sm text-soft-foreground">{label}</p>
-      <p className="mt-1 font-serif text-3xl">
+      <div className="mt-1 flex items-end justify-between gap-3">
+      <p className="font-serif text-3xl">
         {value}
         {label.startsWith("Conversion") ? <span className="ml-1 text-lg">%</span> : null}
       </p>
+      <ArrowUpRight size={16} className="mb-1 text-muted-foreground/50 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+      </div>
     </Link>
   );
 }
@@ -123,6 +126,21 @@ export function OverviewView({
 
   return (
     <div className="space-y-6">
+      <div className="flex flex-col justify-between gap-4 rounded-2xl border border-cool-light bg-surface/45 px-5 py-5 sm:flex-row sm:items-end sm:px-6">
+        <div>
+          <p className="eyebrow">Vue d’ensemble</p>
+          <h2 className="mt-2 font-serif text-3xl tracking-tight sm:text-4xl">Votre activité, en un coup d’œil</h2>
+          <p className="mt-2 max-w-xl text-sm leading-6 text-soft-foreground">Priorisez les actions importantes et gardez une vue claire sur votre pipeline commercial.</p>
+        </div>
+        <div className="flex shrink-0 gap-2">
+          <a href="/crm/taches" className="inline-flex items-center gap-2 rounded-xl border border-cool-light bg-background px-3.5 py-2.5 text-xs font-semibold transition hover:border-earth/40 hover:bg-background">
+            <ClipboardList size={15} /> Voir mes tâches
+          </a>
+          <a href="/crm/leads" className="inline-flex items-center gap-2 rounded-xl bg-earth px-3.5 py-2.5 text-xs font-semibold text-primary-foreground transition hover:bg-earth/90">
+            <Plus size={15} /> Nouveau lead
+          </a>
+        </div>
+      </div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Metric label="Leads actifs" value={stats.activeLeads} icon={Users} href="/crm/leads" />
         <Metric label="Tâches en retard" value={stats.overdueTasks} icon={AlertTriangle} href="/crm/taches" alert />

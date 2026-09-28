@@ -3,7 +3,7 @@ import { requireStaff, isStaffError, parseJson, dbError } from '@/lib/crm/auth'
 import { SEARCH_FEATURES } from '@/lib/property-search'
 import { createAdminClient, deleteStaleMedia, extractStoragePath } from '@/lib/supabase/admin'
 
-const PROPERTY_SELECT = 'id, slug, title, city, neighborhood, property_type, transaction_type, price, bedrooms, bathrooms, area_m2, description, cover_path, status, agency_id, agent_id, features, created_at, updated_at'
+const PROPERTY_SELECT = 'id, slug, title, city, neighborhood, property_type, transaction_type, price, bedrooms, bathrooms, area_m2, description, cover_path, status, agency_id, agent_id, owner_id, created_by, updated_by, features, created_at, updated_at'
 
 const editableStrings = ['title', 'description', 'city', 'neighborhood', 'property_type', 'transaction_type', 'status', 'cover_path'] as const
 const editableNumbers = ['price', 'bedrooms', 'bathrooms', 'area_m2'] as const
@@ -42,6 +42,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if ('agency_id' in body) update.agency_id = body.agency_id || null
     if ('agent_id' in body) update.agent_id = body.agent_id || null
   }
+  if (Object.keys(update).length > 0) update.updated_by = auth.user.id
   if (Object.keys(update).length === 0 && !(Array.isArray(body.imagePaths) && body.imagePaths.length)) {
     return NextResponse.json({ error: 'Aucune modification fournie.' }, { status: 400 })
   }

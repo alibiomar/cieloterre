@@ -81,6 +81,8 @@ export async function POST(request: Request) {
     .from("crm_notes")
     .insert({
       author_id: auth.user.id,
+      created_by: auth.user.id,
+      owner_id: auth.user.id,
       lead_id: isBroadcast ? null : leadId,
       contact_id: isBroadcast ? null : contactId,
       is_broadcast: isBroadcast,

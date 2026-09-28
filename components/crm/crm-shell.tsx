@@ -20,6 +20,7 @@ import {
   NotebookPen,
   Activity as ActivityIcon,
   Globe,
+  ChevronRight,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { SidebarWeather } from "./sidebar-weather";
@@ -91,6 +92,25 @@ const tabIconMap: Record<CrmTab, typeof Users> = {
   Site: Globe,
 };
 
+const tabDescriptions: Partial<Record<CrmTab, string>> = {
+  "Vue d’ensemble": "Les indicateurs de votre activité",
+  Leads: "Suivez vos opportunités",
+  Contacts: "Votre carnet de contacts",
+  Biens: "Gérez votre catalogue",
+  Visites: "Votre agenda commercial",
+  Tâches: "Les prochaines actions",
+  "Notes d'équipe": "Partagez l'essentiel",
+  Équipe: "Agents et agences",
+  Transactions: "Suivez vos opérations",
+  Finances: "Pilotage financier",
+  Documents: "Vos fichiers métier",
+  Conseils: "Contenus éditoriaux",
+  "Demandes clients": "Demandes reçues",
+  "Activité agents": "Journal d'activité",
+  "Mon compte": "Préférences personnelles",
+  Site: "Présence publique",
+};
+
 function tabForPath(pathname: string): CrmTab {
   const entry = Object.entries(tabPaths).find(([, path]) => pathname.startsWith(path));
   return (entry?.[0] as CrmTab) ?? "Vue d’ensemble";
@@ -151,7 +171,7 @@ export function CrmShell({ profile, children }: { profile: Profile; children: Re
       )}
       {/* This sidebar lives in the persistent layout, not in a per-page
           component, so switching sections never remounts or re-fetches it. */}
-      <aside className={`fixed inset-y-0 left-0 z-50 flex w-72 shrink-0 flex-col overflow-y-auto border-r border-cool-light bg-earth px-6 py-8 text-primary-foreground transition-transform duration-300 lg:translate-x-0 ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 flex w-72 shrink-0 flex-col overflow-y-auto border-r border-white/10 bg-earth px-5 py-6 text-primary-foreground transition-transform duration-300 lg:translate-x-0 ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <a href="/" className="flex items-center gap-3">
       <Image
         src={ "/logo.svg"}
@@ -169,17 +189,17 @@ export function CrmShell({ profile, children }: { profile: Profile; children: Re
         >
           <X size={20} />
         </button>
-        <div className="mt-6 rounded-2xl border border-background/10 bg-background/5 p-4">
+        <div className="mt-7 rounded-2xl border border-white/10 bg-white/[0.06] p-4 shadow-[0_12px_30px_rgba(0,0,0,0.12)]">
           <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-primary">{greeting},</p>
           <p className="mt-1 truncate font-serif text-lg leading-tight">{profile.full_name ?? "Membre de l'équipe"}</p>
           <p className="mt-1 text-[11px] capitalize text-primary-foreground/50">
             {profile.role === "admin" ? "Administrateur" : profile.role === "agency_admin" ? "Responsable d'agence" : "Agent immobilier"}
           </p>
         </div>
-        <div className="mt-6">
+        <div className="mt-5">
           <SidebarWeather />
         </div>
-        <nav className="mt-8 flex flex-col gap-7">
+        <nav className="mt-7 flex flex-col gap-6" aria-label="Navigation CRM">
           {navGroups.map((group) => {
             const visibleItems = group.items.filter((item) => !adminOnlyTabs.includes(item) || profile.role === "admin");
             if (!visibleItems.length) return null;
@@ -191,10 +211,14 @@ export function CrmShell({ profile, children }: { profile: Profile; children: Re
                     <button
                       key={item}
                       onClick={() => goTo(item)}
-                      className={`flex items-center gap-3 rounded-xl px-4 py-3 text-left text-sm transition ${activeTab === item ? "bg-primary font-semibold text-foreground" : "text-primary-foreground/60 hover:bg-background/10 hover:text-primary-foreground"}`}
+                      aria-current={activeTab === item ? "page" : undefined}
+                      className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[13px] transition-all duration-200 ${activeTab === item ? "bg-primary font-semibold text-foreground shadow-[0_8px_20px_rgba(185,143,114,0.16)]" : "text-primary-foreground/60 hover:bg-white/[0.07] hover:text-primary-foreground"}`}
                     >
-                      {createElement(tabIconMap[item], { size: 17 })}
-                      {item}
+                      <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg ${activeTab === item ? "bg-white/20" : "bg-white/[0.05] group-hover:bg-white/10"}`}>
+                        {createElement(tabIconMap[item], { size: 15, strokeWidth: activeTab === item ? 2.4 : 1.8 })}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate">{item}</span>
+                      {activeTab === item && <ChevronRight size={14} className="opacity-60" />}
                     </button>
                   ))}
                 </div>
@@ -202,17 +226,19 @@ export function CrmShell({ profile, children }: { profile: Profile; children: Re
             );
           })}
         </nav>
+        <div className="mt-auto border-t border-white/10 pt-4">
         <button
           onClick={() => void signOut()}
-          className="mt-auto flex items-center gap-3 px-4 py-3 text-sm text-primary-foreground/55 hover:text-primary-foreground"
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm text-primary-foreground/55 transition hover:bg-white/[0.07] hover:text-primary-foreground"
         >
           <LogOut size={17} />
           Se déconnecter
         </button>
+        </div>
       </aside>
 
       <div className="min-w-0 lg:pl-72">
-        <header className="sticky top-0 z-30 border-b border-cool-light bg-background/90 px-5 py-4 backdrop-blur-xl sm:px-8">
+        <header className="sticky top-0 z-30 border-b border-cool-light/80 bg-background/90 px-5 py-4 backdrop-blur-xl sm:px-8">
           <div className="flex items-center justify-between gap-4">
             <div className="flex min-w-0 items-center gap-4">
               <button
@@ -224,7 +250,13 @@ export function CrmShell({ profile, children }: { profile: Profile; children: Re
               >
                 <Menu size={20} />
               </button>
-
+              <div className="min-w-0">
+                <p className="hidden text-[10px] font-bold uppercase tracking-[0.22em] text-accent sm:block">Espace de travail</p>
+                <div className="flex min-w-0 items-baseline gap-2">
+                  <h1 className="truncate font-serif text-xl sm:text-2xl">{activeTab}</h1>
+                  {tabDescriptions[activeTab] && <span className="hidden truncate text-xs text-soft-foreground md:block">· {tabDescriptions[activeTab]}</span>}
+                </div>
+              </div>
             </div>
             <div className="flex shrink-0 items-center gap-3">
               <NotificationBell />
@@ -238,7 +270,7 @@ export function CrmShell({ profile, children }: { profile: Profile; children: Re
           </div>
         </header>
 
-        <div className="mx-auto px-5 py-8 sm:px-8">{children}</div>
+        <div className="mx-auto max-w-[1600px] px-5 py-7 sm:px-8 sm:py-9">{children}</div>
       </div>
     </main>
   );

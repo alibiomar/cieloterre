@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import type { Property } from "@/lib/cieloterre-data";
 import { SafeImage as Image } from "@/components/safe-image";
 import { createClient } from "@/lib/supabase/client";
+import { propertyHref } from "@/lib/supabase/mappers";
 
 import { isLocalFavorite, toggleFavorite, subscribeFavorites } from "@/lib/favorites";
 
@@ -38,7 +39,7 @@ export function PropertyCard({
     <article
       className={`group overflow-hidden rounded-2xl border border-cool-light bg-background shadow-sm transition-shadow hover:shadow-xl ${featured ? "md:col-span-2" : ""}`}
     >
-      <Link href={`/biens/${property.slug}`} className="block">
+      <Link href={propertyHref(property.slug)} className="block">
         <div
           className={`relative overflow-hidden ${featured ? "aspect-[1.8]" : "aspect-[1.2]"}`}
         >
@@ -75,7 +76,7 @@ export function PropertyCard({
             color={saved ? "var(--primary)" : "currentColor"}
           />
         </button>
-        <Link href={`/biens/${property.slug}`}>
+        <Link href={propertyHref(property.slug)}>
           <p className="text-xs text-soft-foreground">
             {property.location}, {property.city}
           </p>

@@ -82,10 +82,11 @@ export async function getPublishedProperties(
 
 export async function getPropertyBySlug(slug: string): Promise<PropertyDetailRow | null> {
   const supabase = await createClient()
+  const select = '*, property_images(*), agencies(*), agents(*)'
 
   const { data, error } = await supabase
     .from('properties')
-    .select('*, property_images(*), agencies(*), agents(*)')
+    .select(select)
     .eq('slug', slug)
     .eq('status', 'published')
     .maybeSingle()
@@ -95,9 +96,26 @@ export async function getPropertyBySlug(slug: string): Promise<PropertyDetailRow
     throw new Error('Impossible de charger le bien')
   }
 
+  if (data) return data as PropertyDetailRow
+
+  // Some slugs contain characters (apostrophes, commas, accents) that can
+  // arrive re-encoded or decoded differently depending on how the link was
+  // built. Retry case-insensitively before giving up.
+  const { data: fallback, error: fallbackError } = await supabase
+    .from('properties')
+    .select(select)
+    .ilike('slug', slug)
+    .eq('status', 'published')
+    .maybeSingle()
+
+  if (fallbackError) {
+    console.error(`[getPropertyBySlug] fallback error for slug "${slug}":`, fallbackError)
+    return null
+  }
+
   // maybeSingle() returns null (no error) when nothing matches — pass that
   // through so callers can render a 404 instead of treating it as a failure.
-  return data as PropertyDetailRow | null
+  return fallback as PropertyDetailRow | null
 }
 export async function getSiteSetting<T = any>(key: string): Promise<T | null> {
   const supabase = await createClient()
@@ -151,11 +169,11 @@ export async function getPublicAgents(): Promise<Agent[]> {
     .eq('is_public', true)
     .order('created_at', { ascending: false })
   let { data, error } = await baseQuery(
-    'slug, bio, phone, email, avatar_path, languages, is_public, agencies(name), profiles(full_name, phone, role)',
+    'slug, name, bio, phone, email, avatar_path, languages, is_public, agencies(name), profiles(full_name, phone, role)',
   )
   if (error?.code === '42703') {
     ({ data, error } = await baseQuery(
-      'slug, bio, phone, email, avatar_path, is_public, agencies(name), profiles(full_name, phone, role)',
+      'slug, name, bio, phone, email, avatar_path, is_public, agencies(name), profiles(full_name, phone, role)',
     ))
   }
   if (error) {
@@ -172,7 +190,7 @@ export async function getPublicAgents(): Promise<Agent[]> {
     const profile = Array.isArray(agent.profiles) ? agent.profiles[0] : agent.profiles;
     return {
     slug: agent.slug,
-    name: profile?.full_name ?? agent.email ?? 'Conseiller CieloTerre',
+    name: profile?.full_name ?? agent.name ?? agent.email ?? 'Conseiller CieloTerre',
     role: profile?.role === 'agency_admin' ? 'Responsable d’agence' : 'Conseiller immobilier',
     city: agent.agencies?.name ?? '',
     languages: Array.isArray(agent.languages) && agent.languages.length ? agent.languages : ['Français', 'Arabe'],

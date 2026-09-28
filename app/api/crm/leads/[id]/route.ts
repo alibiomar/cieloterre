@@ -22,7 +22,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const body = await parseJson(request)
   if (!body) return NextResponse.json({ error: 'Corps de requête invalide' }, { status: 400 })
 
-  const update: Record<string, unknown> = { updated_at: new Date().toISOString() }
+  const update: Record<string, unknown> = { updated_at: new Date().toISOString(), updated_by: auth.user.id }
   if ('status' in body) {
     if (!statuses.has(body.status)) return NextResponse.json({ error: 'Statut invalide' }, { status: 400 })
     update.status = body.status
@@ -35,7 +35,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if ('property_id' in body) {
     update.property_id = body.property_id || null
   }
-  if (Object.keys(update).length <= 1) return NextResponse.json({ error: 'Aucune modification fournie.' }, { status: 400 })
+  if (Object.keys(update).length <= 2) return NextResponse.json({ error: 'Aucune modification fournie.' }, { status: 400 })
 
   const scopeError = await assertAgencyLead(supabase, id, auth)
   if (scopeError) return scopeError

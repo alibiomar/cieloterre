@@ -29,6 +29,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if ('notes' in body) update.notes = body.notes || null
   if ('status' in body && statuses.has(body.status)) update.status = body.status
   if (Object.keys(update).length === 0) return NextResponse.json({ error: 'Aucune modification fournie.' }, { status: 400 })
+  update.updated_by = auth.user.id
 
   const { data, error } = await supabase.from('visits').update(update).eq('id', id).select('id, scheduled_at, status, notes, owner_id, created_at, contacts(id, full_name, phone, email), properties(id, title, city, slug)').single()
   if (error) return dbError('Impossible de mettre à jour la visite.', error)

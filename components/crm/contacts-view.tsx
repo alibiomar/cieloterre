@@ -51,9 +51,6 @@ export function ContactsView({
   const [typeFilter, setTypeFilter] = useState("all");
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<Contact | null>(null);
-  // Admins only: lets them see at a glance which agency each contact
-  // belongs to, and sort/regroup the list by agency.
-  const [groupByAgency, setGroupByAgency] = useState(false);
   const filtered = useMemo(() => {
     const bySearch = contacts.filter((contact) => {
       const matchesSearch = `${contact.full_name} ${contact.email ?? ""} ${contact.phone ?? ""}`
@@ -62,11 +59,8 @@ export function ContactsView({
       const matchesType = typeFilter === "all" || contact.contact_type === typeFilter;
       return matchesSearch && matchesType;
     });
-    if (!isAdmin || !groupByAgency) return bySearch;
-    return [...bySearch].sort((a, b) =>
-      (a.agency_name ?? "\uffff").localeCompare(b.agency_name ?? "\uffff"),
-    );
-  }, [contacts, search, typeFilter, isAdmin, groupByAgency]);
+    return bySearch;
+  }, [contacts, search, typeFilter]);
 
   const deleteContact = async (id: string) => {
     const response = await fetch(`/api/crm/contacts/${id}`, {
@@ -87,16 +81,6 @@ export function ContactsView({
           <h2 className="mt-2 font-serif text-2xl">{agencyName ? `Contacts · ${agencyName}` : "Contacts"}</h2>
         </div>
         <div className="flex items-center gap-2">
-          {isAdmin && (
-            <button
-              type="button"
-              onClick={() => setGroupByAgency((v) => !v)}
-              aria-pressed={groupByAgency}
-              className={`whitespace-nowrap rounded-full border px-3 py-2 text-xs font-semibold ${groupByAgency ? "border-earth bg-earth text-primary-foreground" : "border-cool-light text-soft-foreground"}`}
-            >
-              Trier par agence
-            </button>
-          )}
           <label className="flex items-center gap-2 rounded-full border border-cool-light bg-background px-3 py-2 text-sm text-soft-foreground">
             <Search size={16} />
             <input
