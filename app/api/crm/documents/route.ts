@@ -40,6 +40,16 @@ export async function POST(request: Request) {
     if (typeof body.event.documentId !== "string" || !["viewed", "downloaded", "signature_requested", "signed", "declined"].includes(body.event.type)) {
       return NextResponse.json({ error: "Événement de document invalide." }, { status: 400 });
     }
+    const { data: document, error: documentError } = await db
+      .from("crm_documents")
+      .select("id, agency_id")
+      .eq("id", body.event.documentId)
+      .maybeSingle();
+    if (documentError) return dbError("Impossible de vérifier le document.", documentError);
+    if (!document) return NextResponse.json({ error: "Document introuvable." }, { status: 404 });
+    if (!auth.isAdmin && document.agency_id !== auth.agencyId) {
+      return NextResponse.json({ error: "Vous n'avez pas accès à ce document." }, { status: 403 });
+    }
     const { error } = await db.from("crm_document_events").insert({
       document_id: body.event.documentId,
       event_type: body.event.type,

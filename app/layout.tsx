@@ -4,6 +4,7 @@ import { Baskervville, Montserrat } from "next/font/google";
 import "./globals.css";
 import { LocaleProvider } from "@/components/locale-provider";
 import { SiteChrome, SiteFooter } from "@/components/site-chrome";
+import { serializeJsonLd } from "@/lib/security/json-ld";
 const display = Baskervville({
   subsets: ["latin"],
   variable: "--font-display",
@@ -71,7 +72,7 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           // eslint-disable-next-line react/no-danger
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(organizationJsonLd) }}
         />
         <LocaleProvider>{children}</LocaleProvider>
         {process.env.NODE_ENV === "production" && <Analytics />}

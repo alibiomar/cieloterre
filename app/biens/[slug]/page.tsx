@@ -4,6 +4,7 @@ import { Check, MapPin } from "lucide-react";
 import { getPropertyBySlug, getPublishedProperties, toPropertyCard } from "@/lib/supabase/queries";
 import { formatNumber, mapsHref, pricePerSqm, priceLabel } from "@/lib/format";
 import { SITE } from "@/lib/site-config";
+import { serializeJsonLd } from "@/lib/security/json-ld";
 import { Gallery } from "@/components/site/gallery";
 import { InquiryForm } from "@/components/site/inquiry-form";
 import { MortgageEstimate } from "@/components/site/mortgage";
@@ -93,7 +94,7 @@ export default async function PropertyPage({ params }: { params: Promise<Params>
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
 
       <div className="ct-wrap pb-28 pt-24 lg:pb-24 lg:pt-28">
         <Breadcrumbs
