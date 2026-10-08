@@ -1,23 +1,17 @@
-import { Header } from "@/components/site-chrome";
-
-export default function LoadingPropertyDetail() {
+export default function Loading() {
   return (
-    <>
-      <Header dark />
-      <main className="bg-background px-6 pb-24 pt-32 lg:px-10">
-        <div className="mx-auto max-w-7xl">
-          <div className="h-4 w-64 animate-pulse rounded-full bg-surface" />
-          <div className="mt-8 grid gap-8 lg:grid-cols-[1.25fr_.75fr]">
-            <div className="aspect-[1.2] w-full animate-pulse rounded-2xl bg-surface" />
-            <div className="space-y-4">
-              <div className="h-8 w-3/4 animate-pulse rounded bg-surface" />
-              <div className="h-4 w-1/2 animate-pulse rounded bg-surface" />
-              <div className="h-10 w-1/3 animate-pulse rounded bg-surface" />
-              <div className="h-40 w-full animate-pulse rounded-2xl bg-surface" />
-            </div>
-          </div>
+    <div className="ct-wrap pb-24 pt-28" aria-busy="true" aria-label="Chargement du bien">
+      <div className="ct-skeleton mb-8 h-4 w-64" />
+      <div className="ct-skeleton aspect-[4/3] w-full lg:h-[34rem] lg:aspect-auto" />
+      <div className="mt-12 grid gap-12 lg:grid-cols-[1fr_24rem]">
+        <div className="space-y-5">
+          <div className="ct-skeleton h-7 w-24" />
+          <div className="ct-skeleton h-16 w-3/4" />
+          <div className="ct-skeleton h-5 w-1/3" />
+          <div className="ct-skeleton mt-10 h-24 w-full" />
         </div>
-      </main>
-    </>
+        <div className="ct-skeleton hidden h-80 lg:block" />
+      </div>
+    </div>
   );
 }

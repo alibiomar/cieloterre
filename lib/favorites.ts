@@ -85,13 +85,13 @@ export function subscribeFavorites(callback: (slugs: string[]) => void): () => v
     const custom = e as CustomEvent<{ slugs: string[] }>;
     callback(custom.detail?.slugs ?? getLocalFavorites());
   };
+  const storageHandler = (e: StorageEvent) => {
+    if (e.key === FAVORITES_STORAGE_KEY) callback(getLocalFavorites());
+  };
   window.addEventListener(FAVORITES_EVENT, handler);
-  window.addEventListener("storage", (e) => {
-    if (e.key === FAVORITES_STORAGE_KEY) {
-      callback(getLocalFavorites());
-    }
-  });
+  window.addEventListener("storage", storageHandler);
   return () => {
     window.removeEventListener(FAVORITES_EVENT, handler);
+    window.removeEventListener("storage", storageHandler);
   };
 }

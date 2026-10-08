@@ -1,20 +1,19 @@
-import { Header, Footer } from "@/components/site-chrome";
-import { getPublishedProperties, toPropertyCard } from "@/lib/supabase/queries";
-import { RentPageContent } from "@/components/louer/rent-page-content";
+import { CatalogPage } from "@/components/site/catalog-page";
 
-export default async function RentPage() {
-  const properties = (await getPublishedProperties({ transaction: "rent" })).map(toPropertyCard);
+export const metadata = { title: "Louer un bien en Tunisie" };
 
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   return (
-    <>
-      <Header dark />
-      <main className="min-h-screen bg-background px-6 pb-24 pt-32 lg:px-10">
-        <div className="mx-auto max-w-[1320px]">
-          <RentPageContent properties={properties} />
-        </div>
-      </main>
-      <Footer />
-    </>
+    <CatalogPage
+      searchParams={await searchParams}
+      basePath="/louer"
+      locked="rent"
+      title="Louer en Tunisie"
+      lede="Des appartements, maisons et villas à louer, présentés avec transparence."
+    />
   );
 }
-export const metadata = { title: "Louer un bien en Tunisie | CieloTerre" };

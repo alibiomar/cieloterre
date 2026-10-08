@@ -1,332 +1,264 @@
 import Link from "next/link";
-import { ArrowRight, ArrowUpRight, MapPin } from "lucide-react";
-import { Footer, Header } from "@/components/site-chrome";
-import { getPublishedProperties, getPublishedPropertyById, getSiteSetting, toPropertyCard } from "@/lib/supabase/queries";
-import { propertyHref } from "@/lib/supabase/mappers";
-import ScrollExpand from "@/components/ScrollExpand";
-import TextLoop from "@/components/TextLoop";
-import Image from "next/image";
-export default async function Page() {
-  const properties = (await getPublishedProperties()).map(toPropertyCard);
-  const featured = properties.slice(0, 3);
-  const cities = [...new Set(properties.map((property) => property.city))];
-  const types = [...new Set(properties.map((property) => property.type))];
-    const heroSetting = await getSiteSetting<{ mode?: string; imagePath?: string | null; propertyId?: string | null }>("hero");
-  let heroProperty = featured[0];
+import { MapPin } from "lucide-react";
+import {
+  getPublicArticles,
+  getPublishedProperties,
+  getPublishedPropertyById,
+  getSiteSetting,
+  toPropertyCard,
+} from "@/lib/supabase/queries";
+import { publicMediaUrl, propertyHref } from "@/lib/supabase/mappers";
+import type { Article, Property } from "@/lib/cieloterre-data";
+import { POPULAR_CITIES } from "@/lib/site-config";
+import { plural, priceLabel, slugifyCity } from "@/lib/format";
+import { SafeImage } from "@/components/safe-image";
+import { SentenceSearch } from "@/components/site/sentence-search";
+import { PropertyCard } from "@/components/site/property-card";
+import { CityIndex, type CityEntry } from "@/components/site/city-index";
+import { HorizonVideo } from "@/components/site/horizon-video";
+import { ContactBand, EmptyState, SectionTitle } from "@/components/site/ui";
+
+type HeroSetting = { mode?: string; imagePath?: string | null; propertyId?: string | null };
+
+async function safe<T>(promise: Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await promise;
+  } catch (error) {
+    console.error("[home] data unavailable:", error);
+    return fallback;
+  }
+}
+
+const DOORS = [
+  { title: "Acheter", text: "Une sélection resserrée et des visites accompagnées, jusqu’à la remise des clés.", href: "/acheter", tone: "bg-ciel text-nuit" },
+  { title: "Louer", text: "Des logements présentés avec transparence, du premier contact à l’état des lieux.", href: "/louer", tone: "bg-sable text-nuit" },
+  { title: "Vendre", text: "Estimation, mise en valeur, négociation : une stratégie pour votre bien.", href: "/vendre", tone: "bg-olive text-white" },
+  { title: "Confier", text: "Nous trouvons le locataire et suivons votre bien au quotidien.", href: "/gestion-locative", tone: "bg-argile text-nuit" },
+] as const;
+
+const GAZE = [
+  { title: "Observer", text: "Comprendre un quartier avant de présenter une adresse : ses rues, sa lumière, ses habitudes." },
+  { title: "Raconter", text: "Donner à voir les usages et le potentiel d’un lieu, avec des photos et des mots justes." },
+  { title: "Accompagner", text: "Rester présent lorsque le choix devient un projet : visites, négociation, signature." },
+] as const;
+
+export default async function HomePage() {
+  const [rows, heroSetting, articles] = await Promise.all([
+    safe(getPublishedProperties({ limit: 100 }), []),
+    safe(getSiteSetting<HeroSetting>("hero"), null),
+    safe(getPublicArticles(), [] as Article[]),
+  ]);
+  const properties = rows.map(toPropertyCard);
+  const featured = properties.slice(0, 5);
+
+  // Hero image: respects the CRM "hero" setting (a property or a free image).
+  let heroProperty: Property | undefined = featured[0];
   let heroImage = heroProperty?.image || "/cieloterre-hero.png";
   if (heroSetting?.mode === "property" && heroSetting.propertyId) {
-    const chosen = await getPublishedPropertyById(heroSetting.propertyId);
-    if (chosen) heroProperty = toPropertyCard(chosen);
+    const chosen = await safe(getPublishedPropertyById(heroSetting.propertyId), null);
+    if (chosen) {
+      heroProperty = toPropertyCard(chosen);
+      heroImage = heroProperty.image;
+    }
   }
- if (heroSetting?.mode === "image" && heroSetting.imagePath) {
-  const imagePath = heroSetting.imagePath.trim();
+  const imageOnly = heroSetting?.mode === "image" && !!heroSetting.imagePath?.trim();
+  if (imageOnly) heroImage = publicMediaUrl(heroSetting?.imagePath, "/cieloterre-hero.png");
 
-  heroImage =
-    imagePath.startsWith("http://") ||
-    imagePath.startsWith("https://") ||
-    imagePath.startsWith("/")
-      ? imagePath
-      : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/public-media/${imagePath.replace(/^\/+/, "")}`;
-}
-  const citySummary = cities.slice(0, 4).join(", ");
+  // Facets for the sentence search and the city index, from published data.
+  const byCity = new Map<string, { count: number; image: string }>();
+  for (const property of properties) {
+    const entry = byCity.get(property.city);
+    if (entry) entry.count += 1;
+    else byCity.set(property.city, { count: 1, image: property.image });
+  }
+  const cityNames = [...byCity.keys()].sort((a, b) => (byCity.get(b)!.count - byCity.get(a)!.count) || a.localeCompare(b, "fr"));
+  const types = [...new Set(properties.map((property) => property.type))].sort((a, b) => a.localeCompare(b, "fr"));
+
+  const cityEntries: CityEntry[] = cityNames.slice(0, 6).map((name) => {
+    const slug = slugifyCity(name);
+    const known = POPULAR_CITIES.some((popular) => slugifyCity(popular) === slug);
+    return {
+      name,
+      count: byCity.get(name)!.count,
+      image: byCity.get(name)!.image,
+      href: known ? `/immobilier/${slug}` : `/biens?ville=${encodeURIComponent(name)}`,
+    };
+  });
 
   return (
-    <main className="site-noise min-h-screen bg-background text-foreground">
-      <Header dark />
-
-      <section className="relative overflow-hidden bg-background text-foreground">
-        <div className="mx-auto grid min-h-190 max-w-360 gap-10 px-6 pb-12 pt-32 lg:grid-cols-[0.78fr_1.22fr] lg:items-end lg:px-12 lg:pb-16">
-          <div className="relative z-10 max-w-xl">
-            <p className="mb-7 flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.28em] text-accent">
-              <span className="h-px w-10 bg-accent" />
-              CieloTerre / immobilier choisi
-            </p>
-            <h1 className="font-serif text-6xl leading-[0.9] tracking-[-0.045em] sm:text-8xl">
-              Habiter avec intention.
-            </h1>
-            <p className="mt-8 max-w-md text-base leading-7 text-soft-foreground">
-              Des adresses singulières en Tunisie, présentées avec le contexte
-              et le regard qui permettent de choisir juste.
-            </p>
-            <div className="mt-9 flex flex-wrap items-center gap-5">
-              <Link
-                href="/biens"
-                className="inline-flex items-center gap-3 rounded-full bg-primary px-6 py-3.5 text-sm font-bold text-primary-foreground transition hover:bg-accent"
-              >
-                Voir les biens <ArrowUpRight size={16} />
-              </Link>
-              <a
-                href="#selection"
-                className="inline-flex items-center gap-2 text-sm font-semibold text-accent hover:text-primary"
-              >
-                La sélection du moment <ArrowRight size={15} />
-              </a>
-            </div>
-          </div>
-
-          <div className="relative min-h-102.5 lg:min-h-150">
-            <div className="absolute inset-0 overflow-hidden rounded-4xl lg:rounded-[2.5rem]">
-              <Image
-                src={heroImage}
-                alt={heroProperty?.title || "Sélection CieloTerre"}
-                className="h-full w-full object-cover"
-                fill
-                priority
-              />
-              <div className="absolute inset-0 bg-linear-to-t from-earth/65 via-transparent to-transparent" />
-            </div>
-<div className="absolute bottom-5 left-5 right-5 flex items-end justify-between gap-4 text-primary-foreground lg:bottom-8 lg:left-8 lg:right-8">
-  {heroSetting?.mode !== "image" && (
     <>
-      <div>
-        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-secondary">
-          À la une
-        </p>
-
-        <p className="mt-2 font-serif text-3xl">
-          {heroProperty?.title || "Votre prochaine adresse"}
-        </p>
-
-        {heroProperty && (
-          <p className="mt-1 flex items-center gap-1.5 text-sm text-primary-foreground/75">
-            <MapPin size={13} /> {heroProperty.location}, {heroProperty.city}
-          </p>
-        )}
-      </div>
-
-      {heroProperty && (
-        <Link
-          href={propertyHref(heroProperty.slug)}
-          aria-label={`Voir ${heroProperty.title}`}
-          className="rounded-full bg-background p-3 text-earth transition hover:bg-secondary"
-        >
-          <ArrowUpRight size={20} />
-        </Link>
-      )}
-    </>
-  )}
-</div>
-          </div>
-        </div>
-      </section>
-
-      <section className="relative z-10 mx-auto -mt-8 max-w-295 px-6 lg:-mt-10">
-        <form
-          action="/biens"
-          className="grid gap-1 rounded-2xl border border-cool-light bg-surface p-2 shadow-[0_20px_60px_rgba(64,59,53,0.12)] sm:grid-cols-[1fr_1fr_auto]"
-        >
-          <label className="rounded-xl px-4 py-3">
-            <span className="block text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Localisation</span>
-            <select name="ville" className="mt-2 w-full bg-transparent text-sm font-semibold outline-none">
-              <option value="">Toutes les villes</option>
-              {cities.map((city) => <option key={city} value={city}>{city}</option>)}
-            </select>
-          </label>
-          <label className="rounded-xl px-4 py-3">
-            <span className="block text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Type de bien</span>
-            <select name="type" className="mt-2 w-full bg-transparent text-sm font-semibold outline-none">
-              <option value="">Tous les types</option>
-              {types.map((type) => <option key={type} value={type}>{type}</option>)}
-            </select>
-          </label>
-          <button className="rounded-xl bg-primary px-7 py-4 text-sm font-bold text-primary-foreground transition hover:bg-secondary hover:text-accent">
-            Rechercher
-          </button>
-        </form>
-      </section>
-
-      <section id="selection" className="mx-auto max-w-360 px-6 pb-28 pt-28 lg:px-12">
-        <div className="flex flex-col justify-between gap-8 border-b border-cool-light pb-7 md:flex-row md:items-end">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-accent">
-              La sélection CieloTerre
+      {/* ---------------------------------------------------------------- Hero */}
+      <section className="relative overflow-hidden">
+        <div className="ct-wrap grid gap-12 pb-16 pt-28 lg:min-h-[min(60rem,100svh)] lg:grid-cols-[1.18fr_0.82fr] lg:items-end lg:gap-14 lg:pb-20 lg:pt-32">
+          <div className="ct-hero-in">
+            <p className="ct-label">Agence immobilière en Tunisie</p>
+            <h1 className="ct-display mt-5 text-[clamp(2.7rem,6.3vw,5.7rem)]">
+              Votre prochaine adresse en Tunisie.
+            </h1>
+            <SentenceSearch cities={cityNames} types={types} />
+            <p className="mt-9 max-w-md text-[0.95rem] text-muted">
+              {properties.length > 0
+                ? `${properties.length} ${plural(properties.length, "bien publié", "biens publiés")} dans ${cityNames.length} ${plural(cityNames.length, "ville", "villes")}, présentés par des conseillers qui connaissent chaque quartier.`
+                : "Appartements, villas et programmes neufs présentés par des conseillers qui connaissent chaque quartier."}
             </p>
-            <h2 className="mt-3 max-w-2xl font-serif text-5xl leading-[0.95] tracking-[-0.035em] sm:text-7xl">
-              {featured.length
-                ? "Des biens qui ont quelque chose."
-                : "Une sélection en préparation."}
-            </h2>
           </div>
-          <Link href="/biens" className="inline-flex shrink-0 items-center gap-2 text-sm font-bold text-primary hover:text-secondary">
-            Parcourir le catalogue <ArrowUpRight size={15} />
-          </Link>
-        </div>
 
-        {featured.length > 0 ? (
-          <div className="mt-10 grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
-            <PropertyFeature property={featured[0]} large />
-            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-1">
-              {featured.slice(1).map((property) => (
-                <PropertyFeature key={property.slug} property={property} />
+          <div className="relative mx-auto w-full max-w-[34rem] lg:mx-0 lg:max-w-none">
+            <div className="ct-arch ct-hero-arch relative aspect-[4/5] w-full bg-ciel-pale lg:aspect-auto lg:h-[min(46rem,78svh)]">
+              <SafeImage
+                src={heroImage}
+                alt={imageOnly ? "Architecture méditerranéenne en Tunisie" : heroProperty?.title ?? "Architecture méditerranéenne en Tunisie"}
+                fill
+                preload
+                sizes="(max-width: 1024px) 92vw, 42vw"
+                className="object-cover"
+              />
+              {!imageOnly && heroProperty && (
+                <Link
+                  href={propertyHref(heroProperty.slug)}
+                  className="group absolute inset-x-4 bottom-4 flex items-end justify-between gap-4 rounded-md bg-chaux/95 p-5 backdrop-blur transition-colors hover:bg-surface sm:inset-x-6 sm:bottom-6"
+                >
+                  <span className="min-w-0">
+                    <span className="block text-sm text-muted">À la une</span>
+                    <span className="mt-0.5 block truncate text-xl font-normal tracking-tight">{heroProperty.title}</span>
+                    <span className="mt-1 flex items-center gap-1.5 text-sm text-muted">
+                      <MapPin size={14} aria-hidden /> {heroProperty.location}, {heroProperty.city}
+                    </span>
+                  </span>
+                  <span className="ct-num shrink-0 text-base font-medium text-porte group-hover:underline">
+                    {priceLabel(heroProperty)}
+                  </span>
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ----------------------------------------------------------- Sélection */}
+      <section className="ct-section bg-ombre/60" aria-labelledby="selection-title">
+        <div className="ct-wrap">
+          <div id="selection-title">
+            <SectionTitle
+              title="Les biens du moment"
+              action={properties.length > 0 ? { label: "Parcourir le catalogue", href: "/biens" } : undefined}
+            />
+          </div>
+          {featured.length > 0 ? (
+            <div className="mt-14 grid gap-12 lg:grid-cols-12 lg:gap-x-10">
+              <div className="lg:col-span-6">
+                <PropertyCard property={featured[0]} variant="feature" priority />
+              </div>
+              {featured.length > 1 && (
+                <div className="grid gap-x-7 gap-y-12 sm:grid-cols-2 lg:col-span-6 lg:content-start">
+                  {featured.slice(1).map((property, index) => (
+                    <div key={property.slug} className={index % 2 === 1 ? "sm:mt-16" : ""}>
+                      <PropertyCard property={property} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="mt-14">
+              <EmptyState
+                title="Une sélection en préparation."
+                text="Nos conseillers publient régulièrement de nouveaux biens. Laissez-nous vos critères, nous vous prévenons dès qu’une adresse correspond."
+                href="/contact"
+                action="Décrire ma recherche"
+              />
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ---------------------------------------------------------------- Villes */}
+      {cityEntries.length >= 2 && (
+        <section className="ct-section" aria-labelledby="cities-title">
+          <div className="ct-wrap">
+            <div id="cities-title" className="mb-14">
+              <SectionTitle title="Où chercher" />
+            </div>
+            <CityIndex cities={cityEntries} />
+          </div>
+        </section>
+      )}
+
+      {/* ----------------------------------------------------------------- Film */}
+      <HorizonVideo
+        src="/videos/givingKey.mp4"
+        poster={heroProperty?.image}
+        title="Une autre façon d’habiter"
+        text="Des lieux, des gestes et des histoires qui donnent du sens à chaque adresse."
+      />
+
+      {/* ---------------------------------------------------------------- Portes */}
+      <section className="on-dark bg-nuit pb-0 pt-8 text-white md:pt-16" aria-labelledby="doors-title">
+        <div className="ct-wrap">
+          <h2 id="doors-title" className="ct-h2 max-w-2xl">Que souhaitez-vous faire ?</h2>
+          <div className="mt-14 grid grid-cols-2 items-end gap-3 sm:gap-5 lg:grid-cols-4">
+            {DOORS.map((door, index) => (
+              <Link
+                key={door.title}
+                href={door.href}
+                className={`ct-arch group flex flex-col justify-end p-5 pt-24 transition-[padding] duration-300 hover:pt-32 sm:p-8 sm:pt-32 sm:hover:pt-40 ${door.tone} ${index % 2 ? "min-h-[22rem] sm:min-h-[28rem]" : "min-h-[25rem] sm:min-h-[32rem]"}`}
+              >
+                <span className="text-[clamp(1.6rem,2.6vw,2.4rem)] font-light leading-none tracking-[-0.03em]">{door.title}</span>
+                <span className="mt-3 text-[0.9375rem] leading-snug opacity-80 sm:mt-4">{door.text}</span>
+                <span className="ct-link mt-5 w-fit text-sm font-medium">Découvrir</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ---------------------------------------------------------------- Regard */}
+      <section className="ct-section" aria-labelledby="gaze-title">
+        <div className="ct-wrap grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20">
+          <div className="lg:sticky lg:top-32 lg:self-start">
+            <h2 id="gaze-title" className="ct-h2 max-w-md">Le bon bien, au bon endroit.</h2>
+            <p className="ct-lede mt-6 max-w-md">
+              Nous sélectionnons moins, racontons mieux et restons présents jusqu’à la signature.
+            </p>
+            <Link href="/a-propos" className="ct-link mt-8 inline-block text-base font-medium text-porte">Notre manière de travailler</Link>
+          </div>
+          <ol className="border-t border-trait">
+            {GAZE.map((step, index) => (
+              <li key={step.title} className="grid gap-4 border-b border-trait py-9 sm:grid-cols-[4.5rem_1fr] sm:py-12">
+                <span className="ct-num text-[2.6rem] font-light leading-none tracking-tight text-ciel">{index + 1}</span>
+                <div>
+                  <h3 className="text-[clamp(1.6rem,2.6vw,2.2rem)] font-light tracking-[-0.025em]">{step.title}</h3>
+                  <p className="mt-3 max-w-lg text-lg leading-relaxed text-muted">{step.text}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      {/* --------------------------------------------------------------- Conseils */}
+      {articles.length > 0 && (
+        <section className="ct-section border-t border-trait bg-ombre/60" aria-labelledby="advice-title">
+          <div className="ct-wrap">
+            <div id="advice-title">
+              <SectionTitle title="Pour préparer votre projet" action={{ label: "Tous les conseils", href: "/conseils" }} />
+            </div>
+            <div className="mt-14 grid gap-x-8 gap-y-12 md:grid-cols-3">
+              {articles.slice(0, 3).map((article) => (
+                <Link key={article.slug} href={`/conseils/${article.slug}`} className="group block">
+                  <div className="relative aspect-[3/2] overflow-hidden rounded-md bg-ombre">
+                    <SafeImage src={article.image} alt="" fill sizes="(max-width: 768px) 92vw, 30vw" className="object-cover transition-transform duration-700 group-hover:scale-[1.04] motion-reduce:transition-none" />
+                  </div>
+                  <p className="mt-5 text-sm text-muted">{article.category}, {article.readTime} de lecture</p>
+                  <h3 className="mt-2 text-[1.5rem] font-normal leading-tight tracking-[-0.02em] group-hover:text-porte">{article.title}</h3>
+                </Link>
               ))}
             </div>
           </div>
-        ) : (
-          <div className="mt-10 rounded-2xl border border-dashed border-cool-light bg-surface p-16 text-center">
-            <p className="font-serif text-3xl">Aucun bien publié pour le moment.</p>
-            <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-soft-foreground">
-              Revenez bientôt pour découvrir les nouvelles adresses CieloTerre.
-            </p>
-          </div>
-        )}
-      </section>
-      <div className="relative top-0 z-10 flex h-0 items-center justify-center">
-        <TextLoop
-          text="cieloterre"
-          separator="•"
-          speed={90}
-          curviness={38}  
-          pauseOnHover={false}
-          ribbon={false}
-          ribbonColor="var(--secondary)"
-          fontWeight={600}
-          fontSize={48}
-          ribbonWidth={12}
-          letterSpacing={2}
-          uppercase={false}
-          color="var(--primary)"
-          shape="wave"
-        />
-      </div>
-      <section
-        aria-labelledby="discovery-title"
-        className="border-y border-cool-light bg-surface px-6 py-24 text-foreground lg:px-12"
-      >
-        <div className="mx-auto max-w-360">
-          <div className="mx-auto max-w-3xl text-center">
-            <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-accent">
-              Agence immobilière en Tunisie
-            </p>
-            <h2
-              id="discovery-title"
-              className="mx-auto mt-5 max-w-2xl font-serif text-5xl leading-[0.95] tracking-[-0.035em] sm:text-7xl"
-            >
-              Trouver le bien qui vous ressemble.
-            </h2>
-            <p className="mx-auto mt-7 max-w-2xl text-sm leading-7 text-soft-foreground">
-              CieloTerre vous accompagne dans votre recherche immobilière en
-              Tunisie, pour acheter, louer ou découvrir un programme neuf avec
-              une sélection claire et un regard attentif sur chaque adresse.
-            </p>
-            <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-soft-foreground">
-              Explorez des appartements, maisons et propriétés sélectionnées
-              selon leur emplacement, leur qualité de vie et leur potentiel.
-              {citySummary
-                ? ` Nos annonces sont actuellement à découvrir à ${citySummary}.`
-                : ""}
-            </p>
-          </div>
-          <div className="relative mx-auto -mt-32 max-w-6xl h-[254.99999999999997svh] min-h-275">
-            <ScrollExpand
-              src="/videos/givingKey.mp4"
-              mediaType="video"
-              poster={heroProperty?.image}
-              alt="Une adresse CieloTerre en mouvement"
-              title="Une autre façon d'habiter"
-              scrollHint="Faites défiler pour découvrir"
-              useWindowScroll
-              startWidth={42}
-              startHeight={58}
-              startRadius={24}
-              endRadius={0}
-              mediaZoom={1.35}
-              scrollDistance={1.2}
-              holdDistance={0.35}
-              smoothing={0.1}
-              overlayScrim={0.45}
-              enabled
-            >
-              <h2 className="font-serif text-4xl sm:text-6xl text-surface">
-                Chaque détail compte
-              </h2>
-              <p className="mt-4 max-w-lg text-sm leading-6 text-primary-foreground/75">
-                Des lieux, des gestes et des histoires qui donnent du sens à
-                chaque adresse.
-              </p>
-            </ScrollExpand>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
-      <section className="border-y border-cool-light bg-background">
-        <div className="mx-auto grid max-w-360 gap-12 px-6 py-24 lg:grid-cols-[0.8fr_1.2fr] lg:px-12">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-accent">Notre regard</p>
-            <h2 className="mt-4 max-w-md font-serif text-5xl leading-[0.95] tracking-[-0.035em] sm:text-7xl">
-              Le bon bien, au bon endroit.
-            </h2>
-          </div>
-          <div className="grid gap-8 sm:grid-cols-3">
-            <Principle number="01" title="Observer" text="Comprendre un quartier avant de présenter une adresse." />
-            <Principle number="02" title="Raconter" text="Donner à voir la lumière, les usages et le potentiel d'un lieu." />
-            <Principle number="03" title="Accompagner" text="Rester présent lorsque le choix devient un projet." />
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-360 px-6 py-28 lg:px-12">
-        <div className="flex flex-col justify-between gap-8 rounded-4xl bg-accent px-8 py-14 text-primary-foreground sm:px-14 lg:flex-row lg:items-end lg:py-20">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-secondary">Un projet en tête ?</p>
-            <h2 className="mt-4 max-w-2xl font-serif text-5xl leading-[0.95] sm:text-7xl">
-              Parlons de l&apos;endroit où vous voulez vivre.
-            </h2>
-          </div>
-          <Link href="/contact" className="inline-flex shrink-0 items-center gap-2 rounded-full bg-primary px-6 py-4 text-sm font-bold text-primary-foreground transition hover:bg-surface hover:text-foreground">
-            Prendre contact <ArrowUpRight size={16} />
-          </Link>
-        </div>
-      </section>
-
-      <Footer />
-    </main>
-  );
-}
-
-function PropertyFeature({
-  property,
-  large = false,
-}: {
-  property: ReturnType<typeof toPropertyCard>;
-  large?: boolean;
-}) {
-  return (
-    <Link href={propertyHref(property.slug)} className="group block">
-      <article className="overflow-hidden rounded-2xl border border-cool-light bg-surface">
-        <div className={`relative overflow-hidden ${large ? "aspect-[1.25]" : "aspect-[1.5]"}`}>
-          <Image
-            src={property.image || "/placeholder.jpg"}
-            alt={property.title}
-            fill
-            sizes={large ? "(max-width: 768px) 100vw, 66vw" : "(max-width: 768px) 100vw, 33vw"}
-            className="object-cover transition duration-700 group-hover:scale-105"
-          />
-          <span className="absolute left-4 top-4 rounded-full bg-background/95 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-foreground">
-            {property.transaction}
-          </span>
-        </div>
-        <div className="flex items-end justify-between gap-4 p-5">
-          <div>
-            <p className="flex items-center gap-1.5 text-xs text-soft-foreground">
-              <MapPin size={13} /> {property.location}, {property.city}
-            </p>
-            <h3 className={`mt-2 font-serif text-foreground ${large ? "text-4xl" : "text-2xl"}`}>
-              {property.title}
-            </h3>
-          </div>
-          <p className="text-right text-sm font-bold text-primary">{property.price}</p>
-        </div>
-      </article>
-    </Link>
-  );
-}
-
-function Principle({ number, title, text }: { number: string; title: string; text: string }) {
-  return (
-    <article className="border-t-2 border-secondary pt-5">
-      <p className="font-mono text-xs text-primary">{number}</p>
-      <h3 className="mt-8 font-serif text-3xl">{title}</h3>
-      <p className="mt-3 text-sm leading-6 text-soft-foreground">{text}</p>
-    </article>
+      <ContactBand title="Dites-nous où vous voulez vivre." text="Un conseiller revient vers vous avec les premières pistes, sans engagement." />
+    </>
   );
 }

@@ -3,7 +3,7 @@ import type { Metadata, Viewport } from "next";
 import { Baskervville, Montserrat } from "next/font/google";
 import "./globals.css";
 import { LocaleProvider } from "@/components/locale-provider";
-
+import { SiteChrome, SiteFooter } from "@/components/site-chrome";
 const display = Baskervville({
   subsets: ["latin"],
   variable: "--font-display",
@@ -47,7 +47,7 @@ export const metadata: Metadata = {
 };
 export const viewport: Viewport = {
   colorScheme: "light",
-  themeColor: "#b98f72",
+  themeColor: "#2f7896",
   width: "device-width",
   initialScale: 1,
 };
@@ -67,6 +67,7 @@ export default function RootLayout({
   return (
     <html lang="fr" className="bg-background" data-scroll-behavior="smooth">
       <body className={`${display.variable} ${sans.variable} antialiased`}>
+        <SiteChrome />
         <script
           type="application/ld+json"
           // eslint-disable-next-line react/no-danger
@@ -74,6 +75,7 @@ export default function RootLayout({
         />
         <LocaleProvider>{children}</LocaleProvider>
         {process.env.NODE_ENV === "production" && <Analytics />}
+        <SiteFooter />
       </body>
     </html>
   );

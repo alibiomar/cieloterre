@@ -1,13 +1,15 @@
-import { PageShell } from "@/components/site-chrome";
-import { FavoritesPageContent } from "@/components/favoris/favorites-page-content";
+import { FavoritesView } from "@/components/site/favorites-view";
+import { PageHeader } from "@/components/site/ui";
+
+export const metadata = { title: "Mes favoris", robots: { index: false } };
 
 export default function FavoritesPage() {
   return (
-    <PageShell>
-      <div className="mx-auto max-w-[900px]">
-        <FavoritesPageContent />
-      </div>
-    </PageShell>
+    <>
+      <PageHeader title="Vos biens favoris." lede="Les adresses que vous gardez à l’œil, réunies au même endroit. Elles sont enregistrées sur cet appareil." />
+      <section className="ct-wrap pb-24">
+        <FavoritesView />
+      </section>
+    </>
   );
 }
-export const metadata = { title: "Mes favoris | CieloTerre" };

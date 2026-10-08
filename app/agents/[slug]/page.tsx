@@ -1,81 +1,53 @@
 import { notFound } from "next/navigation";
-import { Header, Footer } from "@/components/site-chrome";
-import { Breadcrumbs } from "@/components/property-ui";
-import { Mail, Phone } from "lucide-react";
+import { Mail, MessageCircle, Phone } from "lucide-react";
 import { getPublicAgentBySlug } from "@/lib/supabase/queries";
-import { SafeImage as Image } from "@/components/safe-image";
+import { whatsappHref } from "@/lib/format";
+import { SafeImage } from "@/components/safe-image";
+import { InquiryForm } from "@/components/site/inquiry-form";
+import { Breadcrumbs } from "@/components/site/ui";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+type Params = { slug: string };
+
+export async function generateMetadata({ params }: { params: Promise<Params> }) {
   const agent = await getPublicAgentBySlug((await params).slug);
-  if (!agent) {
-    return { title: "Conseiller immobilier | CieloTerre" };
-  }
+  if (!agent) return { title: "Conseiller immobilier" };
+  const description = agent.bio || `${agent.name}, ${agent.role.toLowerCase()} chez CieloTerre. Parle ${agent.languages.join(", ")}.`;
   return {
-    title: `${agent.name} – ${agent.role} ${agent.city} | CieloTerre`,
-    description: agent.bio || `${agent.name}, ${agent.role.toLowerCase()} chez CieloTerre à ${agent.city}. Parle ${agent.languages.join(", ")}.`,
-    openGraph: {
-      title: `${agent.name} | CieloTerre`,
-      description: agent.bio || `${agent.role} à ${agent.city}`,
-      images: agent.image ? [{ url: agent.image }] : [],
-    },
+    title: `${agent.name}, ${agent.role.toLowerCase()}`,
+    description,
+    openGraph: { title: `${agent.name} | CieloTerre`, description, images: agent.image ? [{ url: agent.image }] : [] },
   };
 }
 
-export default async function AgentDetail({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+export default async function AgentPage({ params }: { params: Promise<Params> }) {
   const agent = await getPublicAgentBySlug((await params).slug);
   if (!agent) notFound();
+  const wa = whatsappHref(agent.phone, `Bonjour ${agent.name}, je vous contacte depuis le site CieloTerre.`);
+
   return (
-    <>
-      <Header dark />
-      <main className="bg-background px-6 pb-24 pt-32 lg:px-10">
-        <div className="mx-auto max-w-[1100px]">
-          <Breadcrumbs items={["Agents", agent.name]} />
-          <div className="grid gap-10 lg:grid-cols-[.8fr_1fr] lg:items-center">
-            <div className="aspect-[.9] overflow-hidden rounded-2xl">
-              <Image
-                src={agent.image}
-                alt={agent.name}
-                width={800}
-                height={900}
-                className="h-full w-full object-cover"
-              />
-            </div>
-            <div>
-              <p className="eyebrow">
-                {agent.role} · {agent.city}
-              </p>
-              <h1 className="section-title">{agent.name}</h1>
-              <p className="mt-6 max-w-lg text-lg leading-8 text-soft-foreground">
-                {agent.bio || "Un accompagnement personnalisé pour avancer sereinement dans votre projet immobilier."}
-              </p>
-              <p className="mt-6 text-sm text-soft-foreground">
-                Parle {agent.languages.join(", ")}
-              </p>
-              <div className="mt-5 flex flex-wrap gap-3">
-                {agent.phone && (
-                  <a href={`tel:${agent.phone}`} className="inline-flex items-center gap-2 rounded-full border border-cool-light px-5 py-3 text-sm font-semibold">
-                    <Phone size={16} /> {agent.phone}
-                  </a>
-                )}
-                {agent.email && (
-                  <a href={`mailto:${agent.email}`} className="inline-flex items-center gap-2 rounded-full border border-cool-light px-5 py-3 text-sm font-semibold">
-                    <Mail size={16} /> {agent.email}
-                  </a>
-                )}
-              </div>
-            </div>
+    <div className="ct-wrap pb-24 pt-28 md:pt-36">
+      <Breadcrumbs items={[{ label: "Conseillers", href: "/agents" }, { label: agent.name }]} />
+      <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:items-center lg:gap-20">
+        <div className="relative mx-auto aspect-[4/5] w-full max-w-md overflow-hidden rounded-md bg-ombre lg:mx-0">
+          <SafeImage src={agent.image} alt={agent.name} fill preload sizes="(max-width: 1024px) 90vw, 36vw" className="object-cover" />
+        </div>
+        <div>
+          <p className="ct-label">{agent.role}{agent.city ? `, ${agent.city}` : ""}</p>
+          <h1 className="ct-display mt-3 text-[clamp(2.4rem,5.5vw,4.6rem)]">{agent.name}</h1>
+          <p className="ct-read mt-6 max-w-xl text-[1.2rem] text-encre/85">
+            {agent.bio || "Un accompagnement personnalisé pour avancer sereinement dans votre projet immobilier."}
+          </p>
+          <p className="mt-6 text-muted">Parle {agent.languages.join(", ")}</p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            {agent.phone && <a href={`tel:${agent.phone.replace(/\s/g, "")}`} className="ct-btn ct-btn--primary"><Phone size={17} aria-hidden /> <span className="ct-num">{agent.phone}</span></a>}
+            {wa && <a href={wa} target="_blank" rel="noreferrer" className="ct-btn ct-btn--ghost"><MessageCircle size={17} aria-hidden /> WhatsApp</a>}
+            {agent.email && <a href={`mailto:${agent.email}`} className="ct-btn ct-btn--ghost"><Mail size={17} aria-hidden /> Écrire</a>}
           </div>
         </div>
-      </main>
-      <Footer />
-    </>
+      </div>
+      <div className="mx-auto mt-24 max-w-2xl">
+        <InquiryForm title={`Écrire à ${agent.name.split(" ")[0]}`} topic={`Conseiller ${agent.name}`} />
+      </div>
+    </div>
   );
 }

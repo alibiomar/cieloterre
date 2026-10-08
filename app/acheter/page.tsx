@@ -1,16 +1,19 @@
-import { PageShell } from "@/components/site-chrome";
-import { getPublishedProperties, toPropertyCard } from "@/lib/supabase/queries";
-import { BuyPageContent } from "@/components/acheter/buy-page-content";
+import { CatalogPage } from "@/components/site/catalog-page";
 
-export default async function BuyPage() {
-  const properties = (await getPublishedProperties({ transaction: "sale" })).map(toPropertyCard);
+export const metadata = { title: "Acheter un bien en Tunisie" };
 
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   return (
-    <PageShell>
-      <div className="mx-auto max-w-[1320px]">
-        <BuyPageContent properties={properties} />
-      </div>
-    </PageShell>
+    <CatalogPage
+      searchParams={await searchParams}
+      basePath="/acheter"
+      locked="sale"
+      title="Acheter en Tunisie"
+      lede="De la première visite à la remise des clés, une sélection qui privilégie la justesse plutôt que le volume."
+    />
   );
 }
-export const metadata = { title: "Acheter un bien en Tunisie | CieloTerre" };

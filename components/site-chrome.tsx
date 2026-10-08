@@ -1,133 +1,143 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
-import { ArrowUpRight, Menu, Search, X } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Heart, Menu, Phone, X } from "lucide-react";
+import { FOOTER_GROUPS, NAV, SITE } from "@/lib/site-config";
+import { useFavorites } from "@/lib/use-favorites";
 
-const links = [
-  ["Acheter", "/acheter"],
-  ["Louer", "/louer"],
-  ["Vendre", "/vendre"],
-  ["Neuf", "/neuf"],
-  ["Agences", "/agences"],
-  ["Agents", "/agents"],
-  ["Conseils", "/conseils"],
-  ["À propos", "/a-propos"],
-];
+/* ------------------------------------------------------------------ */
+/* Logo                                                                */
+/* ------------------------------------------------------------------ */
 
-export function Logo({
-  dark = false,
-  iconOnly = false,
-}: {
-  dark?: boolean;
-  iconOnly?: boolean;
-}) {
+export function Logo({ tone = "light", className = "" }: { tone?: "light" | "dark"; className?: string }) {
+  // The supplied wordmark is pastel and disappears on white, so the name is
+  // set in live type: sky + clay, darkened on light backgrounds for contrast.
+  const sky = tone === "dark" ? "var(--s-sky)" : "var(--s-zenith)";
+  const clay = tone === "dark" ? "var(--e-clay)" : "var(--e-terra)";
   return (
     <Link
       href="/"
-      className={`flex items-center gap-3 ${dark ? "text-foreground" : "text-background"}`}
-      aria-label="cieloterre, accueil"
+      aria-label="CieloTerre, accueil"
+      className={`inline-flex items-center gap-2.5 ${className}`}
     >
-      <Image
-        src={iconOnly ? "/icon.svg" : "/logo.svg"}
-        alt="cieloterre"
-        width={iconOnly ? 453 : 1503}
-        height={iconOnly ? 451 : 368}
-        className={iconOnly ? "h-32 w-32 shrink-0" : "h-12 w-auto shrink-0"}
-        priority={!iconOnly}
-      />
+      <Image src="/icon.svg" alt="" width={44} height={44} className="h-9 w-9 shrink-0" />
+      <span className="text-[1.65rem] font-light leading-none tracking-[-0.025em]">
+        <span style={{ color: sky }}>cielo</span>
+        <span style={{ color: clay }}>terre</span>
+      </span>
     </Link>
   );
 }
 
-export function Header({ dark = false }: { dark?: boolean }) {
+/* ------------------------------------------------------------------ */
+/* Header                                                              */
+/* ------------------------------------------------------------------ */
+
+export function Header(_props: { dark?: boolean }) {
+  const pathname = usePathname();
+  const { slugs } = useFavorites();
   const [open, setOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const [solid, setSolid] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 28);
-    onScroll();
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      setSolid(window.scrollY > 12);
+      setProgress(max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0);
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    update();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
   }, []);
 
-  // Lock body scroll + allow Escape to close the mobile drawer
+  useEffect(() => setOpen(false), [pathname]);
+
   useEffect(() => {
     if (!open) return;
-    const prevOverflow = document.body.style.overflow;
+    const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    const onKey = (event: KeyboardEvent) => event.key === "Escape" && setOpen(false);
     window.addEventListener("keydown", onKey);
     return () => {
-      document.body.style.overflow = prevOverflow;
+      document.body.style.overflow = previous;
       window.removeEventListener("keydown", onKey);
     };
   }, [open]);
 
-  const solid = dark || scrolled;
-
   return (
     <>
       <header
-        className={`fixed mx-4 md:mx-32 mt-4 rounded-3xl inset-x-0 top-0 z-40 border-b backdrop-blur-xs transition-all duration-300 motion-reduce:transition-none ${
-          solid
-            ? "border-surface/10 bg-black/5 text-accent shadow-[0_10px_30px_rgba(116,116,90,0.08)]"
-            : "border-transparent bg-transparent text-background"
-        }`}
+        data-solid={solid}
+        className="ct-header fixed inset-x-0 top-0 z-40 transition-[background-color,backdrop-filter] duration-300 data-[solid=true]:bg-chaux/90 data-[solid=true]:backdrop-blur-md"
+        style={{ ["--p" as string]: progress }}
       >
-        <div
-          className={`mx-auto flex max-w-330 items-center justify-between px-6 transition-all duration-300 motion-reduce:transition-none lg:px-10 ${
-            scrolled ? "py-3" : "py-5"
-          }`}
-        >
-          <Logo dark={solid} />
+        <div className="ct-wrap flex h-[4.5rem] items-center justify-between gap-6">
+          <Logo />
 
-          <nav
-            className="hidden items-center gap-8 text-[13px] font-medium tracking-[0.01em] lg:flex"
-            aria-label="Navigation principale"
-          >
-            {links.map(([label, href]) => (
-              <Link
-                key={href}
-                href={href}
-                className="group relative py-1 text-inherit"
-              >
-                {label}
-                <span
-                  aria-hidden
-                  className="pointer-events-none absolute inset-x-0 -bottom-0.5 h-px origin-center scale-x-0 bg-current transition-transform duration-300 ease-out group-hover:scale-x-100 motion-reduce:transition-none"
-                />
-              </Link>
-            ))}
+          <nav aria-label="Navigation principale" className="hidden items-center gap-8 lg:flex">
+            {NAV.map((item) => {
+              const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={active ? "page" : undefined}
+                  className={`ct-link ct-link--nav text-[0.95rem] font-normal ${active ? "text-porte" : "text-encre"}`}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
           </nav>
 
-          <div className="flex items-center gap-3">
-            <Link
-              href="/contact"
-              className="hidden items-center gap-1.5 rounded-full bg-secondary px-4 py-2.5 text-xs font-bold text-foreground transition-colors hover:bg-earth hover:text-primary-foreground md:inline-flex"
+          <div className="flex items-center gap-2 sm:gap-3">
+            <a
+              href={SITE.phoneHref}
+              className="hidden items-center gap-2 text-[0.95rem] text-encre xl:inline-flex"
             >
-              Parlons de votre projet <ArrowUpRight size={14} />
+              <Phone size={15} aria-hidden /> <span className="ct-num">{SITE.phone}</span>
+            </a>
+            <Link
+              href="/favoris"
+              aria-label={slugs.length ? `Mes favoris (${slugs.length})` : "Mes favoris"}
+              className="relative grid size-11 place-items-center rounded-full text-encre transition-colors hover:bg-ombre"
+            >
+              <Heart size={20} aria-hidden fill={slugs.length ? "currentColor" : "none"} />
+              {slugs.length > 0 && (
+                <span className="absolute right-1 top-1 grid min-w-4 place-items-center rounded-full bg-porte px-1 text-[10px] font-medium leading-4 text-white">
+                  {slugs.length}
+                </span>
+              )}
             </Link>
-            <Link
-              href="/biens"
-              aria-label="Rechercher"
-              className="rounded-full border p-2 transition-colors hover:border-primary hover:text-primary"
-              style={{ borderColor: "currentColor" }}
-            >
-              <Search size={17} />
+            <Link href="/contact" className="ct-btn ct-btn--dark ct-btn--sm hidden md:inline-flex">
+              Nous contacter
             </Link>
             <button
-              className="rounded-full border p-2 lg:hidden"
-              style={{ borderColor: "currentColor" }}
+              type="button"
               onClick={() => setOpen(true)}
               aria-label="Ouvrir le menu"
               aria-expanded={open}
+              className="grid size-11 place-items-center rounded-full text-encre transition-colors hover:bg-ombre lg:hidden"
             >
-              <Menu size={18} />
+              <Menu size={22} aria-hidden />
             </button>
           </div>
         </div>
+        <div className="ct-horizon" aria-hidden />
       </header>
 
       {open && (
@@ -135,44 +145,133 @@ export function Header({ dark = false }: { dark?: boolean }) {
           role="dialog"
           aria-modal="true"
           aria-label="Menu"
-          className="fixed inset-0 z-50 flex flex-col bg-surface p-6 text-accent lg:hidden"
+          className="on-dark fixed inset-0 z-50 flex flex-col bg-nuit text-white lg:hidden"
         >
-          <div className="flex items-center justify-between">
-            <Logo />
-            <button onClick={() => setOpen(false)} aria-label="Fermer le menu">
-              <X />
+          <div className="ct-wrap flex h-[4.5rem] items-center justify-between">
+            <Logo tone="dark" />
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              aria-label="Fermer le menu"
+              className="grid size-11 place-items-center rounded-full hover:bg-white/10"
+            >
+              <X size={22} aria-hidden />
             </button>
           </div>
-
-          <nav
-            className="mt-32 flex flex-col justify-center items-center gap-5 text-4xl leading-tight"
-
-          >
-            {links.map(([label, href]) => (
-              <Link onClick={() => setOpen(false)} href={href} key={href}>
-                {label}
+          <nav aria-label="Menu mobile" className="ct-wrap flex flex-1 flex-col justify-center gap-1 overflow-y-auto py-6">
+            {[...NAV, { label: "À propos", href: "/a-propos" }].map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="py-2 text-[clamp(2rem,9vw,3rem)] font-light leading-tight tracking-[-0.03em] text-white/95 active:text-ciel"
+              >
+                {item.label}
               </Link>
             ))}
-                      <div className="mt-auto pt-10">
-            <Link
-              onClick={() => setOpen(false)}
-              href="/contact"
-              className="inline-flex items-center rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground"
-            >
-              Confier mon bien <ArrowUpRight size={16} className="ml-2" />
+          </nav>
+          <div className="ct-wrap grid gap-3 pb-8 sm:grid-cols-2">
+            <a href={SITE.phoneHref} className="ct-btn ct-btn--light">
+              <Phone size={16} aria-hidden /> {SITE.phone}
+            </a>
+            <Link href="/contact" className="ct-btn ct-btn--outline-light">
+              Nous écrire
             </Link>
           </div>
-          </nav>
-
-
         </div>
       )}
     </>
   );
 }
+
 export function SiteChrome() {
+  const pathname = usePathname();
+  const isCrmRoute = pathname === "/crm" || pathname.startsWith("/crm/");
+
+  if (isCrmRoute) return null;
+
   return <Header />;
 }
+
+export function SiteFooter() {
+  const pathname = usePathname();
+  const isCrmRoute = pathname === "/crm" || pathname.startsWith("/crm/");
+
+  if (isCrmRoute) return null;
+
+  return <Footer />;
+}
+
+/* ------------------------------------------------------------------ */
+/* Footer                                                              */
+/* ------------------------------------------------------------------ */
+
+export function Footer() {
+  return (
+    <footer className="on-dark bg-nuit text-white/70">
+      <div className="ct-wrap pb-8 pt-16 md:pt-24">
+        <div className="grid gap-14 border-b border-white/15 pb-16 lg:grid-cols-[1.35fr_2fr] lg:gap-24">
+          <div>
+            <Logo tone="dark" />
+            <p className="mt-9 max-w-md text-[clamp(2rem,4vw,3.5rem)] font-light leading-[0.98] tracking-[-0.045em] text-white">
+              Des lieux qui restent avec vous.
+            </p>
+            <div className="mt-9 space-y-2 text-[0.95rem]">
+              <a href={SITE.phoneHref} className="ct-link ct-num block w-fit text-white">
+                {SITE.phone}
+              </a>
+              <a href={`mailto:${SITE.email}`} className="ct-link block w-fit text-white">
+                {SITE.email}
+              </a>
+              <p className="pt-2 text-white/50">{SITE.hours}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-x-8 gap-y-12 sm:grid-cols-3">
+            {FOOTER_GROUPS.map((group) => (
+              <div key={group.title}>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ciel">{group.title}</p>
+                <ul className="mt-5 space-y-3 text-[0.95rem]">
+                  {group.links.map((link) => (
+                    <li key={link.href}>
+                      <Link href={link.href} className="ct-link text-white/70 hover:text-white">
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid divide-y divide-white/15 border-b border-white/15 md:grid-cols-3 md:divide-x md:divide-y-0">
+          {SITE.offices.map((office) => (
+            <div key={office.city} className="py-7 first:md:pr-8 md:px-8 md:first:pl-0 md:last:pr-0">
+              <p className="text-base font-normal text-white">{office.city}</p>
+              <p className="mt-2 max-w-xs text-sm leading-6 text-white/50">{office.address}</p>
+              <a href={`tel:${office.phone.replace(/\s/g, "")}`} className="ct-link ct-num mt-3 inline-block text-sm text-ciel">
+                {office.phone}
+              </a>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex flex-col gap-4 pt-6 text-sm text-white/45 sm:flex-row sm:items-center sm:justify-between">
+          <p>© {new Date().getFullYear()} CieloTerre. Tous droits réservés.</p>
+          <div className="flex flex-wrap gap-x-6 gap-y-2">
+            <Link href="/mentions-legales" className="ct-link hover:text-white">Mentions légales</Link>
+            <Link href="/politique-confidentialite" className="ct-link hover:text-white">Confidentialité</Link>
+            <Link href="/conditions" className="ct-link hover:text-white">Conditions</Link>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* PageShell — still used by the /auth pages                           */
+/* ------------------------------------------------------------------ */
 
 export function PageShell({
   children,
@@ -184,88 +283,12 @@ export function PageShell({
   innerClassName?: string;
 }) {
   return (
-    <>
-      <Header dark />
-      <main
-        className={`relative min-h-screen overflow-hidden bg-background text-accent ${className}`}
-      >
-        <div className="pointer-events-none absolute -right-32 top-20 h-96 w-96 rounded-full bg-secondary/20 blur-3xl" />
-        <div
-          className={`relative mx-auto max-w-330 px-6 pb-24 pt-32 lg:px-10 ${innerClassName}`}
-        >
-          {children}
-        </div>
+    <div className="ct">
+      <Header />
+      <main className={`min-h-[70vh] bg-chaux ${className}`}>
+        <div className={`ct-wrap pb-24 pt-32 ${innerClassName}`}>{children}</div>
       </main>
       <Footer />
-    </>
-  );
-}
-
-export function Footer() {
-  return (
-    <footer
-      className="border-t border-surface bg-background px-6 pb-12 pt-20 text-accent lg:px-10"
-    >
-      <div className="mx-auto grid max-w-330 gap-12 md:grid-cols-[1.5fr_1fr_1fr_1fr]">
-        <div>
-          <Logo dark iconOnly />
-          <p
-            className="mt-5 max-w-xs text-sm leading-6 text-accent"
-          >
-
-            Des adresses qui vous ressemblent.
-          </p>
-        </div>
-        {[
-          [
-            "Découvrir",
-            ["Acheter", "/acheter"],
-            ["Louer", "/louer"],
-            ["Neuf", "/neuf"],
-          ],
-          [
-            "cieloterre",
-            ["Nos agences", "/agences"],
-            ["Nos agents", "/agents"],
-            ["À propos", "/a-propos"],
-          ],
-          [
-            "Nous trouver",
-            ["Nous contacter", "/contact"],
-          ],
-        ].map(([title, ...items]) => (
-          <div key={title as string}>
-            <p
-              className="text-xs font-semibold uppercase tracking-widest text-primary"
-            >
-              {title as string}
-            </p>
-            <div
-              className="mt-5 flex flex-col gap-3 text-sm text-accent"
-            >
-              {(items as string[][]).map(([label, href]) => (
-                <Link key={label} href={href}>
-                  {label}
-                </Link>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>  
-      <div
-        className="mx-auto mt-14 flex max-w-330 justify-between border-t border-surface pt-5 text-[11px] text-primary"
-      >
-
-        <span>
-          © {new Date().getFullYear()} cieloterre. Tous droits réservés.
-        </span>
-        <div className="flex gap-4">
-          <Link href="/mentions-legales">Mentions légales</Link>
-          <Link href="/politique-confidentialite">Confidentialité</Link>
-          <Link href="/conditions">Conditions</Link>
-        </div>
-      </div>
-
-    </footer>
+    </div>
   );
 }
