@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bell, CalendarClock, ClipboardList, Mail, UserPlus } from "lucide-react";
 import type { CrmNotification } from "@/lib/crm/notifications";
+import { createClient } from "@/lib/supabase/client";
 
 const iconByType: Record<CrmNotification["type"], typeof Bell> = {
   lead: UserPlus,
@@ -45,10 +46,26 @@ export function NotificationBell() {
 
   useEffect(() => {
     load();
-    // Poll for new notifications without ever touching the heavy dashboard
-    // queries — this is the only thing that refreshes on a timer.
-    const interval = setInterval(load, 60000);
-    return () => clearInterval(interval);
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel("crm-notifications")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "crm_notifications",
+        },
+        () => {
+          void load();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
   }, [load]);
 
   useEffect(() => {
@@ -65,6 +82,9 @@ export function NotificationBell() {
   const toggleOpen = async () => {
     const next = !open;
     setOpen(next);
+    if (next) {
+      await load();
+    }
     if (next && unseenCount > 0) {
       setUnseenCount(0);
       await fetch("/api/crm/notifications", { method: "POST" });
@@ -83,7 +103,7 @@ export function NotificationBell() {
         aria-label="Notifications"
         aria-expanded={open}
         onClick={toggleOpen}
-        className="relative rounded-full border border-cool-light p-2.5 text-foreground transition hover:bg-surface"
+        className="relative rounded-full border bg-background border-cool-light p-2.5 text-foreground transition hover:bg-surface"
       >
         <Bell size={18} />
         {unseenCount > 0 && (

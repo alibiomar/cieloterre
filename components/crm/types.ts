@@ -73,6 +73,16 @@ export type Visit = {
   properties: { id: string; title: string; city: string; slug: string } | null
 }
 
+export type CalendarTask = Pick<Task, "id" | "title" | "due_date" | "status" | "priority" | "owner_id" | "agency_name"> & {
+  contacts: { id: string; full_name: string } | null
+  properties: { id: string; title: string } | null
+}
+
+export type CalendarVisit = Pick<Visit, "id" | "scheduled_at" | "status" | "owner_id" | "agency_name"> & {
+  contacts: { id: string; full_name: string } | null
+  properties: { id: string; title: string; city: string } | null
+}
+
 export type ViewingRequest = {
   id: string
   name: string

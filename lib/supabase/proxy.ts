@@ -44,6 +44,22 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   if (
+    user &&
+    ['/auth/login', '/auth/error', '/auth/accept-invite'].includes(
+      request.nextUrl.pathname,
+    )
+  ) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/crm'
+    url.search = ''
+    const response = NextResponse.redirect(url)
+    supabaseResponse.cookies.getAll().forEach(({ name, value, ...options }) => {
+      response.cookies.set(name, value, options)
+    })
+    return response
+  }
+
+  if (
     // if the user is not logged in and the app path, in this case, /protected, is accessed, redirect to the login page
     request.nextUrl.pathname.startsWith('/crm') &&
     !user

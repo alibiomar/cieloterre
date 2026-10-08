@@ -61,7 +61,10 @@ export default function Page() {
   };
 
   return (
-    <PageShell className="flex items-center justify-center pt-32">
+    <PageShell
+      className="w-full"
+      innerClassName="flex min-h-[70vh] items-center justify-center !pb-24 !pt-24"
+    >
       <div className="w-full max-w-md">
         <div className="overflow-hidden rounded-[28px] border border-cool-light bg-background/90 shadow-[0_18px_60px_rgba(16,43,63,0.08)] backdrop-blur-sm">
           <div className="border-b border-cool-light bg-surface px-6 py-5">

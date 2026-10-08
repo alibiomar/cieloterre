@@ -11,6 +11,7 @@ export const CRM_SECTIONS = {
   biens: "Biens",
   visites: "Visites",
   taches: "Tâches",
+  agenda: "Agenda",
   equipe: "Équipe",
   transactions: "Transactions",
   finances: "Finances",
@@ -452,6 +453,7 @@ export async function loadVisits(section: string, searchParams: SearchParams) {
   if (isAdmin && !picked) {
     return { section: CRM_SECTIONS.visites, needsAgencyPick: true as const, agencies: await agencySummaryByOwner(db, "visits"), isAdmin: true };
   }
+
   const scopeMemberIds = isAdmin ? await agencyMemberIds(picked!) : memberIds;
   const scopeAgencyId = isAdmin ? picked! : agencyId;
   const agencyName = isAdmin ? (await db.from("agencies").select("name").eq("id", picked!).maybeSingle()).data?.name ?? null : null;
@@ -489,6 +491,41 @@ export async function loadVisits(section: string, searchParams: SearchParams) {
     viewingRequests: viewingRequests.data ?? [],
     contacts: (contacts ?? []) as any,
     properties: properties.data ?? [],
+    isAdmin: role === "admin",
+    agencyName,
+    agencyId: picked ?? null,
+  };
+}
+
+export async function loadAgenda(section: string, searchParams: SearchParams) {
+  const { db, role, isAdmin, agencyId, memberIds } = await getStaffContext(section);
+  const picked = pickedAgencyId(searchParams);
+  if (isAdmin && !picked) {
+    return { section: CRM_SECTIONS.agenda, needsAgencyPick: true as const, agencies: await agencySummaryByOwner(db, "crm_tasks"), isAdmin: true };
+  }
+  const scopeMemberIds = isAdmin ? await agencyMemberIds(picked!) : memberIds;
+  const agencyName = isAdmin ? (await db.from("agencies").select("name").eq("id", picked!).maybeSingle()).data?.name ?? null : null;
+  const ownerFilter = scopeMemberIds?.length ? scopeMemberIds : ["00000000-0000-0000-0000-000000000000"];
+  let tasksQuery = db
+    .from("crm_tasks")
+    .select("id, title, due_date, status, priority, owner_id, contacts(id, full_name), properties(id, title)")
+    .not("due_date", "is", null)
+    .order("due_date", { ascending: true })
+    .limit(500);
+  let visitsQuery = db
+    .from("visits")
+    .select("id, scheduled_at, status, owner_id, contacts(id, full_name), properties(id, title, city)")
+    .order("scheduled_at", { ascending: true })
+    .limit(500);
+  if (scopeMemberIds) {
+    tasksQuery = tasksQuery.in("owner_id", ownerFilter);
+    visitsQuery = visitsQuery.in("owner_id", ownerFilter);
+  }
+  const [{ data: tasks }, { data: visits }] = await Promise.all([tasksQuery, visitsQuery]);
+  return {
+    section: CRM_SECTIONS.agenda,
+    tasks: await attachAgencyNames(db, tasks ?? [], role === "admin"),
+    visits: await attachAgencyNames(db, visits ?? [], role === "admin"),
     isAdmin: role === "admin",
     agencyName,
     agencyId: picked ?? null,

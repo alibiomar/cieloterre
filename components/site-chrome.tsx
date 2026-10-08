@@ -12,22 +12,16 @@ import { useFavorites } from "@/lib/use-favorites";
 /* Logo                                                                */
 /* ------------------------------------------------------------------ */
 
-export function Logo({ tone = "light", className = "" }: { tone?: "light" | "dark"; className?: string }) {
-  // The supplied wordmark is pastel and disappears on white, so the name is
-  // set in live type: sky + clay, darkened on light backgrounds for contrast.
-  const sky = tone === "dark" ? "var(--s-sky)" : "var(--s-zenith)";
-  const clay = tone === "dark" ? "var(--e-clay)" : "var(--e-terra)";
+export function Logo({ className = "" }: { tone?: "light" | "dark"; className?: string }) {
   return (
     <Link
       href="/"
       aria-label="CieloTerre, accueil"
       className={`inline-flex items-center gap-2.5 ${className}`}
     >
-      <Image src="/icon.svg" alt="" width={44} height={44} className="h-9 w-9 shrink-0" />
-      <span className="text-[1.65rem] font-light leading-none tracking-[-0.025em]">
-        <span style={{ color: sky }}>cielo</span>
-        <span style={{ color: clay }}>terre</span>
-      </span>
+      <Image src="/logo.svg" alt="cieloterre"   width={1503}
+        height={368} className="h-12 w-auto shrink-0" />
+
     </Link>
   );
 }
@@ -284,11 +278,9 @@ export function PageShell({
 }) {
   return (
     <div className="ct">
-      <Header />
       <main className={`min-h-[70vh] bg-chaux ${className}`}>
         <div className={`ct-wrap pb-24 pt-32 ${innerClassName}`}>{children}</div>
       </main>
-      <Footer />
     </div>
   );
 }

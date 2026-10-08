@@ -7,6 +7,7 @@ import {
   loadProperties,
   loadTasks,
   loadVisits,
+  loadAgenda,
   loadTeam,
   loadOperationsLookups,
   loadRole,
@@ -20,6 +21,7 @@ import {
   PropertiesSection,
   TasksSection,
   VisitsSection,
+  CalendarSection,
   TeamSection,
   OperationsSection,
   DocumentsSection,
@@ -164,6 +166,21 @@ export default async function CrmSectionPage({
           agencyId={data.agencyId}
         />
       );
+    }
+    case "agenda": {
+      const data = await loadAgenda(section, sp);
+      if (data.needsAgencyPick) {
+        return (
+          <AgencyPickerRedirect
+            basePath="/crm/agenda"
+            title="Agenda"
+            subtitle="Choisissez une agence pour voir les tâches et visites de son agenda."
+            agencies={data.agencies}
+            itemLabel="agenda"
+          />
+        );
+      }
+      return <CalendarSection tasks={data.tasks} visits={data.visits} isAdmin={data.isAdmin} agencyName={data.agencyName} />;
     }
     case "equipe": {
       const data = await loadTeam(section);

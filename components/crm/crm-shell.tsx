@@ -34,6 +34,7 @@ const tabs = [
   "Biens",
   "Visites",
   "Tâches",
+  "Agenda",
   "Notes d'équipe",
   "Équipe",
   "Transactions",
@@ -54,6 +55,7 @@ const tabPaths: Record<CrmTab, string> = {
   Biens: "/crm/biens",
   Visites: "/crm/visites",
   Tâches: "/crm/taches",
+  Agenda: "/crm/agenda",
   "Notes d'équipe": "/crm/notes",
   Équipe: "/crm/equipe",
   Transactions: "/crm/transactions",
@@ -70,7 +72,7 @@ const tabPaths: Record<CrmTab, string> = {
 const adminOnlyTabs: CrmTab[] = ["Équipe", "Finances", "Site"];
 const navGroups: { label: string; items: CrmTab[] }[] = [
   { label: "Pilotage", items: ["Vue d’ensemble"] },
-  { label: "Activité", items: ["Leads", "Contacts", "Biens", "Visites", "Tâches", "Notes d'équipe"] },
+  { label: "Activité", items: ["Leads", "Contacts", "Biens", "Agenda", "Visites", "Tâches", "Notes d'équipe"] },
   { label: "Administration", items: ["Équipe", "Transactions", "Finances", "Documents", "Conseils", "Demandes clients", "Activité agents", "Mon compte", "Site"] },
 ];
 const tabIconMap: Record<CrmTab, typeof Users> = {
@@ -80,6 +82,7 @@ const tabIconMap: Record<CrmTab, typeof Users> = {
   Biens: Building2,
   Visites: CalendarDays,
   Tâches: ClipboardList,
+  Agenda: CalendarDays,
   "Notes d'équipe": NotebookPen,
   Équipe: UserRoundCog,
   Transactions: WalletCards,
@@ -99,6 +102,7 @@ const tabDescriptions: Partial<Record<CrmTab, string>> = {
   Biens: "Gérez votre catalogue",
   Visites: "Votre agenda commercial",
   Tâches: "Les prochaines actions",
+  Agenda: "Tâches et visites par jour",
   "Notes d'équipe": "Partagez l'essentiel",
   Équipe: "Agents et agences",
   Transactions: "Suivez vos opérations",
@@ -171,7 +175,7 @@ export function CrmShell({ profile, children }: { profile: Profile; children: Re
       )}
       {/* This sidebar lives in the persistent layout, not in a per-page
           component, so switching sections never remounts or re-fetches it. */}
-      <aside className={`fixed inset-y-0 left-0 z-50 flex w-72 shrink-0 flex-col overflow-y-auto border-r border-white/10 bg-earth px-5 py-6 text-primary-foreground transition-transform duration-300 lg:translate-x-0 ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 flex [scrollbar-width:none] [&::-webkit-scrollbar]:hidden w-72 shrink-0 flex-col overflow-y-auto border-r border-white/10 bg-earth px-5 py-6 text-primary-foreground transition-transform duration-300 lg:translate-x-0 ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <a href="/" className="flex items-center gap-3">
       <Image
         src={ "/logo.svg"}
@@ -238,9 +242,9 @@ export function CrmShell({ profile, children }: { profile: Profile; children: Re
       </aside>
 
       <div className="min-w-0 lg:pl-72">
-        <header className="sticky top-0 z-30 border-b border-cool-light/80 bg-background/90 px-5 py-4 backdrop-blur-xl sm:px-8">
+        <header className="sticky top-0 z-30 ">
           <div className="flex items-center justify-between gap-4">
-            <div className="flex min-w-0 items-center gap-4">
+            {/* <div className="flex min-w-0 items-center gap-4">
               <button
                 type="button"
                 aria-label="Ouvrir le menu CRM"
@@ -257,12 +261,12 @@ export function CrmShell({ profile, children }: { profile: Profile; children: Re
                   {tabDescriptions[activeTab] && <span className="hidden truncate text-xs text-soft-foreground md:block">· {tabDescriptions[activeTab]}</span>}
                 </div>
               </div>
-            </div>
-            <div className="flex shrink-0 items-center gap-3">
+            </div> */}
+            <div className="flex shrink-0 items-center gap-3 right-4 top-4 fixed">
               <NotificationBell />
               <a
                 href="/"
-                className="hidden rounded-full border border-cool-light px-4 py-2 text-sm font-semibold text-soft-foreground hover:bg-surface sm:block"
+                className="hidden rounded-full bg-background border border-cool-light px-4 py-2 text-sm font-semibold text-soft-foreground hover:bg-surface sm:block"
               >
                 Voir le site
               </a>

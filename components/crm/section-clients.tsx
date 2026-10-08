@@ -17,6 +17,7 @@ import { AccountView } from "./account-view";
 import { NotesView } from "./notes-view";
 import { ActivityView } from "./activity-view";
 import { SiteSettingsView } from "./site-settings-view";
+import { CalendarView } from "./calendar-view";
 import type {
   Contact,
   CrmProperty,
@@ -24,6 +25,8 @@ import type {
   Task,
   Visit,
   ViewingRequest,
+  CalendarTask,
+  CalendarVisit,
 } from "./types";
 import type { PaginationMeta } from "./contacts-view";
 
@@ -192,6 +195,29 @@ export function VisitsSection({
       agencyName={agencyName}
       agencyId={agencyId}
       onBackToAgencies={isAdmin && agencyName ? () => router.push("/crm/visites") : undefined}
+    />
+  );
+}
+
+export function CalendarSection({
+  tasks,
+  visits,
+  isAdmin,
+  agencyName,
+}: {
+  tasks: CalendarTask[];
+  visits: CalendarVisit[];
+  isAdmin?: boolean;
+  agencyName?: string | null;
+}) {
+  const router = useRouter();
+  return (
+    <CalendarView
+      tasks={tasks}
+      visits={visits}
+      isAdmin={isAdmin}
+      agencyName={agencyName}
+      onBackToAgencies={isAdmin && agencyName ? () => router.push("/crm/agenda") : undefined}
     />
   );
 }
